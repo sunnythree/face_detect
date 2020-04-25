@@ -163,7 +163,7 @@ def test_dataset():
         fig = plt.figure(num=1, figsize=(15, 8), dpi=80)  # 开启一个窗口，同时设置大小，分辨率
         origin_img = transform(sample_batched['img'][0])
         bboxes = tensor2bbox(sample_batched['label'][0], 416, [52, 26, 13])
-        # bboxes = nms(bboxes, 0.5)
+        bboxes = nms(bboxes, 0.5)
         draw = ImageDraw.Draw(origin_img)
         for bbox in bboxes:
             draw.rectangle((bbox[0] - bbox[2] / 2, bbox[1] - bbox[3] / 2, bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2),
@@ -174,4 +174,4 @@ def test_dataset():
         plt.close()
 
 
-# test_dataset()
+test_dataset()
