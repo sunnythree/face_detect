@@ -39,12 +39,12 @@ def nms(bboxes, thresh):
             continue
         is_contain = False
         for i in range(len(nms_boxes)):
-            nms_box =  nms_boxes[i]
-            iou = box_iou(box,nms_box)
+            nms_box = nms_boxes[i]
+            iou = box_iou(box, nms_box)
             if iou > thresh:
+                is_contain = True
                 if box[4] > nms_box[4]:
                     nms_boxes[i] = box
-                    is_contain = True
                     break
         if not is_contain:
             nms_boxes.append(box)
