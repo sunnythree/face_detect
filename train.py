@@ -12,7 +12,7 @@ import os
 from utils import progress_bar, nms
 from torchvision import transforms as tfs
 
-MODEL_SAVE_PATH = "./data/codec_seg.pt"
+MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -30,18 +30,22 @@ def train(args):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     model = MSSD('VGG11')
+    print("add graph")
     writer.add_graph(model, torch.zeros((1, 3, 416, 416)))
+    print("add graph over")
     if args.pretrained and os.path.exists(MODEL_SAVE_PATH):
+        print("loading ...")
         state = torch.load(MODEL_SAVE_PATH)
         model.load_state_dict(state['net'])
         start_epoch = state['epoch']
+        print("loading over")
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
     scheduler = StepLR(optimizer, step_size=args.step, gamma=args.gama)
     train_loss = 0
     loss_func = torch.nn.MSELoss().to(device)
-    to_pil_img = tfs.Compose(tfs.ToPILImage())
-    to_tensor = tfs.Compose(tfs.ToTensor())
+    to_pil_img = tfs.ToPILImage()
+    to_tensor = tfs.ToTensor()
     for epoch in range(start_epoch, start_epoch+args.epoes):
         model.train()
         for i_batch, sample_batched in enumerate(data_loader):
@@ -58,7 +62,7 @@ def train(args):
             writer.add_scalar("loss", train_loss, global_step=global_step)
 
         #save one pic and output
-        pil_img = to_pil_img(img_tensor[0])
+        pil_img = to_pil_img(sample_batched['img'][0])
         bboxes = tensor2bbox(sample_batched['label'][0], 416, [52, 26, 13])
         bboxes = nms(bboxes, 0.5)
         draw = ImageDraw.Draw(pil_img)
