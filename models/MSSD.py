@@ -11,6 +11,19 @@ cfg = {
 }
 
 
+class BasicBlock(nn.Module):
+    def __init__(self, inplanes, planes):
+        super(BasicBlock, self).__init__()
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, padding=1),
+        self.bn1 = nn.BatchNorm2d(planes),
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        return x
+
 def get_m_index(data):
     indexs = []
     for i in range(len(data)):
@@ -26,50 +39,50 @@ class MSSD(nn.Module):
         self.layers = self._make_layers(cfg[vgg_name])
         self.m_indexs = get_m_index(cfg[vgg_name])
         self.feature_map = self._make_feature_map(cfg[vgg_name])
+        self.tt = BasicBlock(3,64)
 
     def forward(self, x):
+        x = self.tt(x)
         # vgg to get feature
-        outs = []
-        for layer in self.layers:
-            x = layer(x)
-            outs.append(x)
-        out1 = self.feature_map[0](outs[self.m_indexs[2]])
-        out2 = self.feature_map[1](outs[self.m_indexs[3]])
-        out3 = self.feature_map[2](outs[self.m_indexs[4]])
-        out1 = out1.view(out1.shape[0], out1.shape[1], out1.shape[2] * out1.shape[3])
-        out2 = out2.view(out2.shape[0], out2.shape[1], out2.shape[2] * out2.shape[3])
-        out3 = out3.view(out3.shape[0], out3.shape[1], out3.shape[2] * out3.shape[3])
-        out = torch.cat((out1, out2, out3), dim=2)
-        for i in range(out.shape[0]):
-            x = out[i, 0, :]
-            tmp = torch.sigmoid(x)
-            for j in range(x.shape[0]):
-                x[j] = tmp[j]
-            y = out[i, 1, :]
-            tmp = torch.sigmoid(y)
-            for j in range(y.shape[0]):
-                y[j] = tmp[j]
-            w = out[i, 2, :]
-            tmp = torch.exp(w)
-            for j in range(w.shape[0]):
-                w[j] = tmp[j]
-            h = out[i, 3, :]
-            tmp = torch.exp(h)
-            for j in range(h.shape[0]):
-                h[j] = tmp[j]
-            c = out[i, 4, :]
-            tmp = torch.sigmoid(c)
-            for j in range(x.shape[0]):
-                c[j] = tmp[j]
-        return out
+        # outs = []
+        # for layer in self.layers:
+        #     print(layer)
+        #     x = layer(x)
+        #     outs.append(x)
+        # out1 = self.feature_map[0](outs[self.m_indexs[2]])
+        # out2 = self.feature_map[1](outs[self.m_indexs[3]])
+        # out3 = self.feature_map[2](outs[self.m_indexs[4]])
+        # out1 = out1.view(out1.shape[0], out1.shape[1], out1.shape[2] * out1.shape[3])
+        # out2 = out2.view(out2.shape[0], out2.shape[1], out2.shape[2] * out2.shape[3])
+        # out3 = out3.view(out3.shape[0], out3.shape[1], out3.shape[2] * out3.shape[3])
+        # out = torch.cat((out1, out2, out3), dim=2)
+        # for i in range(out.shape[0]):
+        #     x = out[i, 0, :]
+        #     tmp = torch.sigmoid(x)
+        #     for j in range(x.shape[0]):
+        #         x[j] = tmp[j]
+        #     y = out[i, 1, :]
+        #     tmp = torch.sigmoid(y)
+        #     for j in range(y.shape[0]):
+        #         y[j] = tmp[j]
+        #     w = out[i, 2, :]
+        #     tmp = torch.exp(w)
+        #     for j in range(w.shape[0]):
+        #         w[j] = tmp[j]
+        #     h = out[i, 3, :]
+        #     tmp = torch.exp(h)
+        #     for j in range(h.shape[0]):
+        #         h[j] = tmp[j]
+        #     c = out[i, 4, :]
+        #     tmp = torch.sigmoid(c)
+        #     for j in range(x.shape[0]):
+        #         c[j] = tmp[j]
+        return x
 
     def _make_feature_map(self, cfg):
         feature_map = []
         for i in range(3):
-            feature_map.append(nn.Sequential(nn.Conv2d(cfg[self.m_indexs[i + 2] - 1], 5,
-                                                       kernel_size=3, padding=1),
-                                             nn.BatchNorm2d(5),
-                                             nn.ReLU()))
+            feature_map.append(nn.Sequential())
         return feature_map
 
     def _make_layers(self, cfg):
@@ -79,9 +92,7 @@ class MSSD(nn.Module):
             if x == 'M':
                 layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
-                layers += [nn.Sequential(nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
-                                         nn.BatchNorm2d(x),
-                                         nn.ReLU(inplace=True))]
+                layers += [BasicBlock(in_channels, x)]
                 in_channels = x
         return layers
 
