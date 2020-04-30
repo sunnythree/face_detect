@@ -11,10 +11,50 @@ cfg = {
 }
 
 
-class BasicBlock(nn.Module):
-    def __init__(self, inplanes, planes):
-        super(BasicBlock, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, padding=1)
+class Bottleneck(nn.Module):
+    def __init__(self, inplanes, planes, stride=1):
+        super(Bottleneck, self).__init__()
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
+                               padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(planes)
+        self.conv3 = nn.Conv2d(planes, planes, kernel_size=1, bias=False)
+        self.bn3 = nn.BatchNorm2d(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.stride = stride
+
+        self.conv4 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
+        self.bn4 = nn.BatchNorm2d(planes)
+
+    def forward(self, x):
+        residual = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        #down sample
+        residual = self.conv4(residual)
+        residual = self.bn4(residual)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
+
+class BaseBlock(nn.Module):
+    def __init__(self, inplanes, planes, kernel_size=3, stride=1, padding=0):
+        super(BaseBlock, self).__init__()
+        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=kernel_size,
+                               stride=stride, padding=padding, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU()
 
@@ -40,12 +80,21 @@ def get_m_index(data):
 
 
 class MSSD(nn.Module):
-    def __init__(self, vgg_name):
+    def __init__(self):
         super(MSSD, self).__init__()
-        self.vgg_name = vgg_name
-        self.layers = self._make_layers(cfg[vgg_name])
-        self.m_indexs = get_m_index(cfg[vgg_name])
-        self.feature_map = self._make_feature_map(cfg[vgg_name])
+        self.b1 = BaseBlock(3, 64, 5, 1, 2)
+        self.down_sample = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.bx1 = Bottleneck(64, 128, 1)
+        self.bx2 = Bottleneck(128, 256, 1)
+        self.bx3 = Bottleneck(256, 128, 1)
+        self.bx4 = Bottleneck(128, 64, 1)
+        self.o1 = BaseBlock(64, 5, 3, 1, 1)
+        self.up_sample = nn.Upsample(scale_factor=2)
+        self.o2 = BaseBlock(5, 5, 3, 1, 1)
+        self.o3 = BaseBlock(5, 5, 3, 1, 1)
+        self.ox1 = BaseBlock(128, 5, 1, 1)
+        self.ox2 = BaseBlock(256, 5, 1, 1)
+
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -55,57 +104,33 @@ class MSSD(nn.Module):
 
     def forward(self, x):
         # vgg to get feature
-        outs = []
-        for layer in self.layers:
-            x = layer(x)
-            outs.append(x)
-        out1 = self.feature_map[0](outs[self.m_indexs[2]])
-        out2 = self.feature_map[1](outs[self.m_indexs[3]])
-        out3 = self.feature_map[2](outs[self.m_indexs[4]])
-        out1 = out1.view(out1.shape[0], out1.shape[1], out1.shape[2] * out1.shape[3])
-        out2 = out2.view(out2.shape[0], out2.shape[1], out2.shape[2] * out2.shape[3])
-        out3 = out3.view(out3.shape[0], out3.shape[1], out3.shape[2] * out3.shape[3])
-        out = torch.cat((out1, out2, out3), dim=2)
-        batches = out.split(split_size=1, dim=0)
-        all = []
-        for batch in batches:
-            x = batch[0, 0, :]
-            x = torch.sigmoid(x)
-            y = batch[0, 1, :]
-            y = torch.sigmoid(y)
-            w = batch[0, 2, :]
-            w = torch.exp(w)
-            h = batch[0, 3, :]
-            h = torch.exp(h)
-            c = batch[0, 4, :]
-            c = torch.sigmoid(c)
-            all.append(torch.stack([x, y, w, h, c]))
-        out = torch.stack(all)
+        x = self.b1(x)                         # 416
+        x = self.down_sample(x)                # 208
+        x = self.bx1(x)                        # 208
+        x = self.down_sample(x)                # 104
+        x1 = self.bx2(x)                       # 104
+        x1 = self.down_sample(x1)                # 52
+        x2 = self.bx3(x1)                      # 52
+        x2 = self.down_sample(x2)                # 26
+        x3 = self.bx4(x2)                      # 26
+        x3 = self.down_sample(x3)                # 13
+        o1 = self.o1(x3)                       # 13
+        ox1 = self.ox1(x2)                     # 26
+        o2 = self.up_sample(o1)                # 26
+        o2 = o2+ox1                            # 26
+        o2 = self.o2(o2)                       # 26
+        ox2 = self.ox2(x1)                     # 26
+        o3 = self.up_sample(o2)                # 52
+        o3 = o3+ox2                            # 52
+        o3 = self.o3(o3)                       # 52
+        o1 = o1.view(o1.shape[0], o1.shape[1], o1.shape[2] * o1.shape[3])
+        o2 = o2.view(o2.shape[0], o2.shape[1], o2.shape[2] * o2.shape[3])
+        o3 = o3.view(o3.shape[0], o3.shape[1], o3.shape[2] * o3.shape[3])
+        out = torch.cat((o1, o2, o3), dim=2)
         out = out.permute(0, 2, 1)
         return out
 
-    def _make_feature_map(self, cfg):
-        feature_map = []
-        for i in range(3):
-            feature_map.append(nn.Sequential(
-                    nn.Conv2d(cfg[self.m_indexs[i+2]-1], 5, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(5),
-                    nn.ReLU()))
-        return nn.ModuleList(feature_map)
 
-    def _make_layers(self, cfg):
-        layers = []
-        in_channels = 3
-        for x in cfg:
-            if x == 'M':
-                layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
-            else:
-                layers += [nn.Sequential(
-                    nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(x),
-                    nn.ReLU())]
-                in_channels = x
-        return nn.ModuleList(layers)
 
 
 def test():

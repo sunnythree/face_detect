@@ -1,6 +1,7 @@
 from PIL import ImageDraw
 
 from models import *
+from ops import *
 from summary import writer
 from dataset import FaceDetectSet, tensor2bbox
 from torch.utils.data import DataLoader
@@ -29,7 +30,7 @@ def train(args):
     data_loader = DataLoader(dataset=FaceDetectSet(416, True), batch_size=args.batch, shuffle=True, num_workers=8)
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
-    model = MSSD('VGG11')
+    model = MSSD()
     print("add graph")
     writer.add_graph(model, torch.zeros((1, 3, 416, 416)))
     print("add graph over")
@@ -43,7 +44,7 @@ def train(args):
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
     scheduler = StepLR(optimizer, step_size=args.step, gamma=args.gama)
     train_loss = 0
-    loss_func = torch.nn.MSELoss().to(device)
+    loss_func = MLoss()
     to_pil_img = tfs.ToPILImage()
     to_tensor = tfs.ToTensor()
     for epoch in range(start_epoch, start_epoch+args.epoes):
@@ -62,15 +63,15 @@ def train(args):
             writer.add_scalar("loss", train_loss, global_step=global_step)
 
         #save one pic and output
-        pil_img = to_pil_img(sample_batched['img'][0])
-        bboxes = tensor2bbox(sample_batched['label'][0], 416, [52, 26, 13])
-        bboxes = nms(bboxes, 0.5)
-        draw = ImageDraw.Draw(pil_img)
-        for bbox in bboxes:
-            draw.rectangle((bbox[0] - bbox[2] / 2, bbox[1] - bbox[3] / 2, bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2),
-                           outline=(0, 255, 0))
-
-        writer.add_image("img: "+str(epoch), to_tensor(pil_img))
+        if epoch % 10 == 0:
+            pil_img = to_pil_img(sample_batched['img'][0])
+            bboxes = tensor2bbox(output[0], 416, [52, 26, 13])
+            bboxes = nms(bboxes, 0.5)
+            draw = ImageDraw.Draw(pil_img)
+            for bbox in bboxes:
+                draw.rectangle((bbox[0] - bbox[2] / 2, bbox[1] - bbox[3] / 2, bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2),
+                               outline=(0, 255, 0))
+            writer.add_image("img: "+str(epoch), to_tensor(pil_img))
         scheduler.step()
 
     if not os.path.isdir('data'):
