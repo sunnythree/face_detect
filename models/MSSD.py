@@ -86,13 +86,13 @@ class MSSD(nn.Module):
         self.down_sample = nn.MaxPool2d(kernel_size=2, stride=2)
         self.bx1 = Bottleneck(64, 128, 1)
         self.bx2 = Bottleneck(128, 256, 1)
-        self.bx3 = Bottleneck(256, 128, 1)
-        self.bx4 = Bottleneck(128, 64, 1)
+        self.bx3 = Bottleneck(256, 512, 1)
+        self.bx4 = Bottleneck(512, 64, 1)
         self.o1 = BaseBlock(64, 5, 3, 1, 1)
         self.up_sample = nn.Upsample(scale_factor=2)
         self.o2 = BaseBlock(5, 5, 3, 1, 1)
         self.o3 = BaseBlock(5, 5, 3, 1, 1)
-        self.ox1 = BaseBlock(128, 5, 1, 1)
+        self.ox1 = BaseBlock(512, 5, 1, 1)
         self.ox2 = BaseBlock(256, 5, 1, 1)
 
         for m in self.modules():
@@ -126,7 +126,7 @@ class MSSD(nn.Module):
         o1 = o1.view(o1.shape[0], o1.shape[1], o1.shape[2] * o1.shape[3])
         o2 = o2.view(o2.shape[0], o2.shape[1], o2.shape[2] * o2.shape[3])
         o3 = o3.view(o3.shape[0], o3.shape[1], o3.shape[2] * o3.shape[3])
-        out = torch.cat((o1, o2, o3), dim=2)
+        out = torch.cat((o3, o2, o1), dim=2)
         out = out.permute(0, 2, 1)
         return out
 
