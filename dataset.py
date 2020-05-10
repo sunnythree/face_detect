@@ -13,6 +13,7 @@ VAL_IMG_PATH = "/home/javer/work/dataset/widerface/WIDER_val/images/"
 SPLIT_PATH = "/home/javer/work/dataset/widerface/wider_face_split"
 TRAIN_SET_FILE = "/wider_face_train_bbx_gt.txt"
 VAL_SET_FILE = "/wider_face_val_bbx_gt.txt"
+MTRAIN = "/mtrain.txt"
 
 
 def getOne(file):
@@ -111,20 +112,43 @@ def pic_resize2square(img, des_size, bboxes, is_random=True):
 def bbox2tensor(bboxes, img_size, feature_map):
     label_tensor = torch.zeros((int((feature_map[0] ** 2) + (feature_map[1] ** 2) + (feature_map[2] ** 2)), 5))
     bbox_index = 0
-    for feature_size in feature_map:
-        cell_size = img_size / feature_size
-        for box in bboxes:
-            cell_x_index = math.floor(box[0] / cell_size)
-            cell_x_bias = box[0] % cell_size
-            cell_y_index = math.floor(box[1] / cell_size)
-            cell_y_bias = box[1] % cell_size
-            p_box = label_tensor[math.floor(bbox_index + cell_y_index * feature_size + cell_x_index), :]
-            p_box[0] = cell_x_bias
-            p_box[1] = cell_y_bias
-            p_box[2] = box[2]
-            p_box[3] = box[3]
-            p_box[4] = 1
-        bbox_index += feature_size ** 2
+    thresh1 = img_size/10
+    thresh2 = img_size/20
+
+    for box in bboxes:
+        w = box[2]
+        h = box[3]
+        max_edge = max(w, h)
+        cell_size = 0
+        start_index = 0
+        feature_size = 0
+        if max_edge > thresh1:
+            # predict by first feature map
+            start_index = int((feature_map[0] ** 2) + (feature_map[1] ** 2))
+            cell_size = img_size/feature_map[2]
+            feature_size = feature_map[2]
+        elif max_edge > thresh2:
+            # predict by second feature map
+            start_index = int((feature_map[0] ** 2))
+            cell_size = img_size / feature_map[1]
+            feature_size = feature_map[1]
+        else:
+            # predict by third feature map
+            start_index = 0
+            cell_size = img_size / feature_map[0]
+            feature_size = feature_map[0]
+
+        cell_x_index = math.floor(box[0] / cell_size)
+        cell_x_bias = box[0] % cell_size
+        cell_y_index = math.floor(box[1] / cell_size)
+        cell_y_bias = box[1] % cell_size
+        p_box = label_tensor[math.floor(start_index + cell_y_index * feature_size + cell_x_index), :]
+        p_box[0] = cell_x_bias/cell_size
+        p_box[1] = cell_y_bias/cell_size
+        p_box[2] = box[2]/img_size
+        p_box[3] = box[3]/img_size
+        p_box[4] = 1
+
     return label_tensor
 
 
@@ -133,6 +157,7 @@ def tensor2bbox(out_tensor, img_size, feature_map, thresh=0.5):
     bboxes = []
     for i in range(out_tensor.shape[0]):
         bbox = out_tensor[i, :]
+        # print(bbox)
         if bbox[4] > thresh:
             feature_size = 0
             r_index = 0
@@ -150,8 +175,10 @@ def tensor2bbox(out_tensor, img_size, feature_map, thresh=0.5):
             start_x = math.floor(r_index % feature_size)
             start_y = math.floor(r_index / feature_size)
             cell_size = img_size / feature_size
-            bbox[0] = bbox[0] + start_x * cell_size
-            bbox[1] = bbox[1] + start_y * cell_size
+            bbox[0] = bbox[0] * cell_size + start_x * cell_size
+            bbox[1] = bbox[1] * cell_size + start_y * cell_size
+            bbox[2] = bbox[2] * img_size
+            bbox[3] = bbox[3] * img_size
             bboxes.append(bbox)
     return bboxes
 

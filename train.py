@@ -13,6 +13,7 @@ import os
 from utils import progress_bar, nms
 from torchvision import transforms as tfs
 
+
 MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
 
 def parse_args():
@@ -47,6 +48,8 @@ def train(args):
     loss_func = MLoss()
     to_pil_img = tfs.ToPILImage()
     to_tensor = tfs.ToTensor()
+    pred_deal = MPred()
+
     for epoch in range(start_epoch, start_epoch+args.epoes):
         model.train()
         for i_batch, sample_batched in enumerate(data_loader):
@@ -54,7 +57,7 @@ def train(args):
             img_tensor = sample_batched["img"].to(device)
             label_tensor = sample_batched["label"].to(device)
             output = model(img_tensor)
-            loss = loss_func(output, label_tensor)
+            loss = loss_func(output, label_tensor, alpha=0.1)
             loss.backward()
             optimizer.step()
             train_loss = loss.item()
@@ -63,15 +66,15 @@ def train(args):
             writer.add_scalar("loss", train_loss, global_step=global_step)
 
         #save one pic and output
-        if epoch % 10 == 0:
-            pil_img = to_pil_img(sample_batched['img'][0])
-            bboxes = tensor2bbox(output[0], 416, [52, 26, 13])
-            bboxes = nms(bboxes, 0.5)
-            draw = ImageDraw.Draw(pil_img)
-            for bbox in bboxes:
-                draw.rectangle((bbox[0] - bbox[2] / 2, bbox[1] - bbox[3] / 2, bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2),
-                               outline=(0, 255, 0))
-            writer.add_image("img: "+str(epoch), to_tensor(pil_img))
+        pil_img = to_pil_img(sample_batched['img'][0])
+        output = pred_deal(output)
+        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.1)
+        bboxes = nms(bboxes, 0.1, 0.5)
+        draw = ImageDraw.Draw(pil_img)
+        for bbox in bboxes:
+            draw.rectangle((bbox[0] - bbox[2] / 2, bbox[1] - bbox[3] / 2, bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2),
+                           outline=(0, 255, 0))
+        writer.add_image("img: "+str(epoch), to_tensor(pil_img))
         scheduler.step()
 
     if not os.path.isdir('data'):
