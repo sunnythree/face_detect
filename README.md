@@ -29,4 +29,4 @@ details: -c for the confidence of box that contains face.
 ![](https://github.com/sunnythree/face_detect/blob/master/doc/pic7.png)  
   
 
-### I am still training and optimize the model
+### I am still training and optimizing the model
