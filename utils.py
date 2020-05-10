@@ -54,8 +54,12 @@ def nms(bboxes, confidence, iou_thresh):
     return nms_boxes
 
 
-
-_, term_width = os.popen('stty size', 'r').read().split()
+term_width = 100
+try:
+    _, term_width = os.popen('stty size', 'r').read().split()
+except:
+    print("get stty size error")
+    term_width = 100
 term_width = int(term_width)
 if term_width <= 0:
     term_width = 100
