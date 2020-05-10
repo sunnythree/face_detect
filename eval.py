@@ -21,21 +21,23 @@ def statistics_result(pred_boxes, label_boxes, iou_thresh=0.5):
     for pbox in pred_boxes:
         is_exist = False
         for lbox in label_boxes:
+            if lbox[4] == 0:
+                continue
             iou = box_iou(pbox, lbox)
             if iou > iou_thresh:
                 is_exist = True
-                label_boxes.remove(lbox)
+                lbox[4] = 0
                 break
         if is_exist:
             correct_num += 1
         else:
             error_num += 1
-    miss_num = len(label_boxes)
+    miss_num = len(label_boxes) - correct_num
     return correct_num, error_num, miss_num
 
 
 def eval(args):
-    data_loader = DataLoader(dataset=FaceDetectSet(416, True), batch_size=1, shuffle=True, num_workers=1)
+    data_loader = DataLoader(dataset=FaceDetectSet(416, False), batch_size=1, shuffle=True, num_workers=1)
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     model = MSSD().to(device)
@@ -63,6 +65,7 @@ def eval(args):
         correct_num += c
         error_num += e
         miss_num += m
+        print("c,e,m=",correct_num, error_num, miss_num)
     print("correct rate: "+str(correct_num/all_num))
     print("error rate: " + str(error_num / all_num))
     print("miss rate: " + str(all_num / all_num))
