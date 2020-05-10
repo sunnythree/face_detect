@@ -48,6 +48,7 @@ def eval(args):
     correct_num = 0
     error_num = 0
     miss_num = 0
+    all_num = 0
     for i_batch, sample_batched in enumerate(data_loader):
         img_tensor = sample_batched["img"].to(device)
         label_tensor = sample_batched["label"].to(device)
@@ -57,10 +58,14 @@ def eval(args):
         bboxes = tensor2bbox(output[0], 416, [52, 26, 13])
         bboxes = nms(bboxes, args.confidence, args.thresh)
         label_boxes = tensor2bbox(label_tensor[0], 416, [52, 26, 13])
+        all_num += len(label_boxes)
         c, e, m = statistics_result(bboxes, label_boxes, args.thresh)
         correct_num += c
         error_num += e
         miss_num += m
+    print("correct rate: "+str(correct_num/all_num))
+    print("error rate: " + str(error_num / all_num))
+    print("miss rate: " + str(all_num / all_num))
 
 if __name__=='__main__':
     eval(parse_args())
