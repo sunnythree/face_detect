@@ -1,5 +1,6 @@
 import sys
 import time
+import os
 
 def overlap(x1, w1, x2, w2):
     l1 = x1 - w1 / 2
@@ -54,7 +55,11 @@ def nms(bboxes, confidence, iou_thresh):
 
 
 
-term_width = 150
+_, term_width = os.popen('stty size', 'r').read().split()
+term_width = int(term_width)
+if term_width <= 0:
+    term_width = 100
+
 TOTAL_BAR_LENGTH = 65.
 last_time = time.time()
 begin_time = last_time
