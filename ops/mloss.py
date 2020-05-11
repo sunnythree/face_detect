@@ -7,6 +7,7 @@ class MPred(nn.Module):
         super(MPred, self).__init__()
 
     def forward(self, x, img_size=416):
+        x = x.cpu()
         batches = x.shape[0]
         for i in range(batches):
             out = x[i, :, 0:3]

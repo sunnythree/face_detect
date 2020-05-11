@@ -57,9 +57,11 @@ def train(args):
     for epoch in range(start_epoch, start_epoch+args.epoes):
         model.train()
         img_tensor, label_tensor = prefetcher.next()
-        i_batch = 0
+        last_img_tensor = img_tensor
+        i_batch = 1
         while img_tensor is not None:
             i_batch += 1
+            last_img_tensor = img_tensor
             optimizer.zero_grad()
             output = model(img_tensor)
             loss = loss_func(output, label_tensor)
@@ -68,15 +70,16 @@ def train(args):
             train_loss = loss.item()
             global_step = epoch*len(data_loader)+i_batch
             progress_bar(i_batch, len(data_loader), 'loss: %f, epeche: %d'%(train_loss, epoch))
-            if i_batch % 10 == 0:
+            if i_batch % 3 == 0:
                 writer.add_scalar("loss", train_loss, global_step=global_step)
             img_tensor, label_tensor = prefetcher.next()
 
+
         #save one pic and output
-        pil_img = to_pil_img(img_tensor[0])
+        pil_img = to_pil_img(last_img_tensor[0].cpu())
         output = pred_deal(output)
-        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.1)
-        bboxes = nms(bboxes, 0.1, 0.5)
+        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.6)
+        bboxes = nms(bboxes, 0.6, 0.5)
         draw = ImageDraw.Draw(pil_img)
         for bbox in bboxes:
             draw.rectangle((bbox[0] - bbox[2] / 2, bbox[1] - bbox[3] / 2, bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2),
