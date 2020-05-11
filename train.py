@@ -91,7 +91,7 @@ def train(args):
         os.mkdir('data')
     print('Saving..')
     state = {
-        'net': model.state_dict(),
+        'net': model.module.state_dict(),
         'epoch': epoch,
     }
     torch.save(state, MODEL_SAVE_PATH)
