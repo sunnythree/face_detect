@@ -29,7 +29,7 @@ def getOne(file):
 
 def get_all_files_and_bboxes(is_train=True):
     if is_train:
-        file = open(SPLIT_PATH + MTRAIN)
+        file = open(SPLIT_PATH + TRAIN_SET_FILE)
     else:
         file = open(SPLIT_PATH + VAL_SET_FILE)
     datas = []
