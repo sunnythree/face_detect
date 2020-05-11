@@ -20,7 +20,7 @@ class MLoss(nn.Module):
     def __init__(self):
         super(MLoss, self).__init__()
 
-    def forward(self, x, y, img_size=416, thresh=0.5):
+    def forward(self, x, y, img_size=416, thresh=0.5, alpha=0.1):
         batches = x.shape[0]
         cell_num = x.shape[1]
         for i in range(batches):
@@ -38,5 +38,7 @@ class MLoss(nn.Module):
                     labels.append(label)
         outs_tensor = torch.cat(outs)
         labels_tensor = torch.cat(labels)
-        diff = torch.pow((labels_tensor-outs_tensor), 2)
-        return diff.sum()
+        diff = torch.pow((labels_tensor-outs_tensor), 2) - alpha * torch.pow(outs_tensor, 2)
+
+        diff_bg = alpha * torch.pow(x[:, :, 0], 2)
+        return diff.sum() + diff_bg.sum()

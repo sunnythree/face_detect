@@ -58,9 +58,8 @@ def train(args):
         prefetcher = data_prefetcher(data_loader)
         img_tensor, label_tensor = prefetcher.next()
         last_img_tensor = img_tensor
-        i_batch = 1
+        i_batch = 0
         while img_tensor is not None:
-            i_batch += 1
             last_img_tensor = img_tensor
             optimizer.zero_grad()
             output = model(img_tensor)
@@ -73,6 +72,7 @@ def train(args):
             if i_batch % 3 == 0:
                 writer.add_scalar("loss", train_loss, global_step=global_step)
             img_tensor, label_tensor = prefetcher.next()
+            i_batch += 1
 
 
         #save one pic and output
