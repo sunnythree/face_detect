@@ -73,8 +73,32 @@ class FaceDetectSet(Dataset):
         feature_map[1] = (self.img_size / (2 ** 4))
         feature_map[2] = (self.img_size / (2 ** 5))
         label_tensor = bbox2tensor(scaled_bboxes, self.img_size, feature_map)
-        return {"img": img_tensor, "label": label_tensor}
+        return img_tensor, label_tensor
 
+
+class data_prefetcher():
+    def __init__(self, loader):
+        self.loader = iter(loader)
+        self.stream = torch.cuda.Stream()
+        self.preload()
+
+    def preload(self):
+        try:
+            self.next_input, self.next_target = next(self.loader)
+        except StopIteration:
+            self.next_input = None
+            self.next_target = None
+            return
+        with torch.cuda.stream(self.stream):
+            self.next_input = self.next_input.cuda(non_blocking=True)
+            self.next_target = self.next_target.cuda(non_blocking=True)
+
+    def next(self):
+        torch.cuda.current_stream().wait_stream(self.stream)
+        input = self.next_input
+        target = self.next_target
+        self.preload()
+        return input, target
 
 def pic_resize2square(img, des_size, bboxes, is_random=True):
     rows = img.height

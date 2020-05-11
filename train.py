@@ -3,7 +3,7 @@ from PIL import ImageDraw
 from models import *
 from ops import *
 from summary import writer
-from dataset import FaceDetectSet, tensor2bbox
+from dataset import FaceDetectSet, tensor2bbox, data_prefetcher
 from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
@@ -28,9 +28,10 @@ def parse_args():
 
 def train(args):
     start_epoch = 0
-    data_loader = DataLoader(dataset=FaceDetectSet(416, True), batch_size=args.batch, shuffle=True, num_workers=8)
+    data_loader = DataLoader(dataset=FaceDetectSet(416, True), batch_size=args.batch, shuffle=True, num_workers=16)
+    prefetcher = data_prefetcher(data_loader)
     use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
+    device = torch.device("cuda:0" if use_cuda else "cpu")
     model = MSSD()
     print("add graph")
     writer.add_graph(model, torch.zeros((1, 3, 416, 416)))
@@ -41,7 +42,9 @@ def train(args):
         model.load_state_dict(state['net'])
         start_epoch = state['epoch']
         print("loading over")
+    model = torch.nn.DataParallel(model, device_ids=[0, 1])  # multi-GPU
     model.to(device)
+
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
     scheduler = StepLR(optimizer, step_size=args.step, gamma=args.gama)
     train_loss = 0
@@ -52,10 +55,12 @@ def train(args):
 
     for epoch in range(start_epoch, start_epoch+args.epoes):
         model.train()
-        for i_batch, sample_batched in enumerate(data_loader):
+
+        img_tensor, label_tensor = prefetcher.next()
+        i_batch = 0
+        while input is not None:
+            i_batch += 1
             optimizer.zero_grad()
-            img_tensor = sample_batched["img"].to(device)
-            label_tensor = sample_batched["label"].to(device)
             output = model(img_tensor)
             loss = loss_func(output, label_tensor, alpha=0.1)
             loss.backward()
@@ -66,7 +71,7 @@ def train(args):
             writer.add_scalar("loss", train_loss, global_step=global_step)
 
         #save one pic and output
-        pil_img = to_pil_img(sample_batched['img'][0])
+        pil_img = to_pil_img(img_tensor[0])
         output = pred_deal(output)
         bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.1)
         bboxes = nms(bboxes, 0.1, 0.5)
