@@ -167,11 +167,12 @@ def bbox2tensor(bboxes, img_size, feature_map):
         cell_y_index = math.floor(box[1] / cell_size)
         cell_y_bias = box[1] % cell_size
         p_box = label_tensor[math.floor(start_index + cell_y_index * feature_size + cell_x_index), :]
-        p_box[0] = cell_x_bias/cell_size
-        p_box[1] = cell_y_bias/cell_size
-        p_box[2] = box[2]/img_size
-        p_box[3] = box[3]/img_size
-        p_box[4] = 1
+        p_box[0] = 1
+        p_box[1] = cell_x_bias/cell_size
+        p_box[2] = cell_y_bias/cell_size
+        p_box[3] = box[2]/img_size
+        p_box[4] = box[3]/img_size
+
 
     return label_tensor
 
@@ -182,7 +183,7 @@ def tensor2bbox(out_tensor, img_size, feature_map, thresh=0.5):
     for i in range(out_tensor.shape[0]):
         bbox = out_tensor[i, :]
         # print(bbox)
-        if bbox[4] > thresh:
+        if bbox[0] > thresh:
             feature_size = 0
             r_index = 0
             thresh_1 = feature_map[0] ** 2 + feature_map[1] ** 2
@@ -199,10 +200,10 @@ def tensor2bbox(out_tensor, img_size, feature_map, thresh=0.5):
             start_x = math.floor(r_index % feature_size)
             start_y = math.floor(r_index / feature_size)
             cell_size = img_size / feature_size
-            bbox[0] = bbox[0] * cell_size + start_x * cell_size
-            bbox[1] = bbox[1] * cell_size + start_y * cell_size
-            bbox[2] = bbox[2] * img_size
+            bbox[1] = bbox[1] * cell_size + start_x * cell_size
+            bbox[2] = bbox[2] * cell_size + start_y * cell_size
             bbox[3] = bbox[3] * img_size
+            bbox[4] = bbox[4] * img_size
             bboxes.append(bbox)
     return bboxes
 

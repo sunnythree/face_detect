@@ -12,6 +12,7 @@ import torch
 import os
 from utils import progress_bar, nms
 from torchvision import transforms as tfs
+import time
 
 
 MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
@@ -48,27 +49,28 @@ def train(args):
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
     scheduler = StepLR(optimizer, step_size=args.step, gamma=args.gama)
     train_loss = 0
-    loss_func = MLoss()
+    loss_func = MLoss().to(device)
     to_pil_img = tfs.ToPILImage()
     to_tensor = tfs.ToTensor()
     pred_deal = MPred()
 
     for epoch in range(start_epoch, start_epoch+args.epoes):
         model.train()
-
         img_tensor, label_tensor = prefetcher.next()
         i_batch = 0
-        while input is not None:
+        while img_tensor is not None:
             i_batch += 1
             optimizer.zero_grad()
             output = model(img_tensor)
-            loss = loss_func(output, label_tensor, alpha=0.1)
+            loss = loss_func(output, label_tensor)
             loss.backward()
             optimizer.step()
             train_loss = loss.item()
             global_step = epoch*len(data_loader)+i_batch
             progress_bar(i_batch, len(data_loader), 'loss: %f, epeche: %d'%(train_loss, epoch))
-            writer.add_scalar("loss", train_loss, global_step=global_step)
+            if i_batch % 10 == 0:
+                writer.add_scalar("loss", train_loss, global_step=global_step)
+            img_tensor, label_tensor = prefetcher.next()
 
         #save one pic and output
         pil_img = to_pil_img(img_tensor[0])
