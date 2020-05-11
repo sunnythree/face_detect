@@ -29,7 +29,7 @@ def getOne(file):
 
 def get_all_files_and_bboxes(is_train=True):
     if is_train:
-        file = open(SPLIT_PATH + TRAIN_SET_FILE)
+        file = open(SPLIT_PATH + MTRAIN)
     else:
         file = open(SPLIT_PATH + VAL_SET_FILE)
     datas = []
@@ -213,12 +213,12 @@ def test_dataset():
     transform = tfs.Compose([tfs.ToPILImage()])
     for i_batch, sample_batched in enumerate(data_loader):
         fig = plt.figure(num=1, figsize=(15, 8), dpi=80)  # 开启一个窗口，同时设置大小，分辨率
-        origin_img = transform(sample_batched['img'][0])
-        bboxes = tensor2bbox(sample_batched['label'][0], 416, [52, 26, 13])
-        bboxes = nms(bboxes, 0.5)
+        origin_img = transform(sample_batched[0][0])
+        bboxes = tensor2bbox(sample_batched[1][0], 416, [52, 26, 13])
+        bboxes = nms(bboxes, 0.5, 0.5)
         draw = ImageDraw.Draw(origin_img)
         for bbox in bboxes:
-            draw.rectangle((bbox[0] - bbox[2] / 2, bbox[1] - bbox[3] / 2, bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2),
+            draw.rectangle((bbox[1] - bbox[3] / 2, bbox[2] - bbox[4] / 2, bbox[1] + bbox[3] / 2, bbox[2] + bbox[4] / 2),
                            outline=(0, 255, 0))
         print(bboxes)
         plt.imshow(origin_img)

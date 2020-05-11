@@ -27,8 +27,8 @@ def test():
     pred_deal = MPred()
 
     for i_batch, sample_batched in enumerate(data_loader):
-        img_tensor = sample_batched["img"].to(device)
-        label_tensor = sample_batched["label"].to(device)
+        img_tensor = sample_batched[0].to(device)
+        label_tensor = sample_batched[1].to(device)
         print("start inference")
         start = time.time()
         output = model(img_tensor)
@@ -38,17 +38,17 @@ def test():
 
 
         # save one pic and output
-        pil_img = to_pil_img(sample_batched['img'][0])
+        pil_img = to_pil_img(sample_batched[0][0])
         print("start show1")
         bboxes = tensor2bbox(output[0], 416, [52, 26, 13])
         print("start show2")
         print(bboxes)
-        bboxes = nms(bboxes, 0.5, 0.5)
+        # bboxes = nms(bboxes, 0.5, 0.5)
         print(bboxes)
         print("get box num: "+str(len(bboxes)))
         draw = ImageDraw.Draw(pil_img)
         for bbox in bboxes:
-            draw.rectangle((bbox[0] - bbox[2] / 2, bbox[1] - bbox[3] / 2, bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2),
+            draw.rectangle((bbox[1] - bbox[3] / 2, bbox[2] - bbox[4] / 2, bbox[1] + bbox[3] / 2, bbox[2] + bbox[4] / 2),
                            outline=(0, 255, 0))
         print("start show")
         plt.imshow(pil_img)
