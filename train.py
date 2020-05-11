@@ -30,7 +30,6 @@ def parse_args():
 def train(args):
     start_epoch = 0
     data_loader = DataLoader(dataset=FaceDetectSet(416, True), batch_size=args.batch, shuffle=True, num_workers=16)
-    prefetcher = data_prefetcher(data_loader)
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda:0" if use_cuda else "cpu")
     model = MSSD()
@@ -56,6 +55,7 @@ def train(args):
 
     for epoch in range(start_epoch, start_epoch+args.epoes):
         model.train()
+        prefetcher = data_prefetcher(data_loader)
         img_tensor, label_tensor = prefetcher.next()
         last_img_tensor = img_tensor
         i_batch = 1
