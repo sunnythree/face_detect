@@ -40,10 +40,10 @@ def test():
         # save one pic and output
         pil_img = to_pil_img(sample_batched[0][0])
         print("start show1")
-        bboxes = tensor2bbox(output[0], 416, [52, 26, 13])
+        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.6)
         print("start show2")
         print(bboxes)
-        # bboxes = nms(bboxes, 0.5, 0.5)
+        bboxes = nms(bboxes, 0.6, 0.5)
         print(bboxes)
         print("get box num: "+str(len(bboxes)))
         draw = ImageDraw.Draw(pil_img)

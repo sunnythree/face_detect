@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import torch
 from utils import nms, box_iou
 import argparse
+import time
 
 MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
 
@@ -51,13 +52,17 @@ def eval(args):
     error_num = 0
     miss_num = 0
     all_num = 0
+    all_cost = 0
     for i_batch, sample_batched in enumerate(data_loader):
-        img_tensor = sample_batched["img"].to(device)
-        label_tensor = sample_batched["label"].to(device)
+        img_tensor = sample_batched[0].to(device)
+        label_tensor = sample_batched[1].to(device)
+        start = time.time()
         output = model(img_tensor)
+        end = time.time()
+        all_cost += (end - start)
         output = pred_deal(output)
 
-        bboxes = tensor2bbox(output[0], 416, [52, 26, 13])
+        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=args.confidence)
         bboxes = nms(bboxes, args.confidence, args.thresh)
         label_boxes = tensor2bbox(label_tensor[0], 416, [52, 26, 13])
         all_num += len(label_boxes)
@@ -69,6 +74,7 @@ def eval(args):
     print("correct rate: "+str(correct_num / all_num*100)+"%")
     print("error rate: " + str(error_num / all_num*100)+"%")
     print("miss rate: " + str(all_num / all_num*100)+"%")
+    print("mean inferince is: " + str(all_cost / len(data_loader)))
 
 if __name__=='__main__':
     eval(parse_args())
