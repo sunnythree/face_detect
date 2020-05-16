@@ -13,7 +13,7 @@ MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
 
 def test():
     start_epoch = 0
-    data_loader = DataLoader(dataset=FaceDetectSet(416, True), batch_size=1, shuffle=True, num_workers=1)
+    data_loader = DataLoader(dataset=FaceDetectSet(512, True), batch_size=1, shuffle=True, num_workers=1)
     use_cuda = torch.cuda.is_available()
     device = torch.device("cpu")
     model = MSSD().to(device)
@@ -24,7 +24,6 @@ def test():
 
     to_pil_img = tfs.ToPILImage()
     to_tensor = tfs.ToTensor()
-    pred_deal = MPred()
 
     for i_batch, sample_batched in enumerate(data_loader):
         img_tensor = sample_batched[0].to(device)
@@ -34,13 +33,12 @@ def test():
         output = model(img_tensor)
         end = time.time()
         print("end inference, cost is: "+str(end-start))
-        output = pred_deal(output)
 
 
         # save one pic and output
         pil_img = to_pil_img(sample_batched[0][0])
         print("start show1")
-        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.6)
+        bboxes = tensor2bbox(output[0], 512, thresh=0.6)
         print("start show2")
         print(bboxes)
         bboxes = nms(bboxes, 0.6, 0.5)

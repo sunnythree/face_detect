@@ -29,12 +29,12 @@ def parse_args():
 
 def train(args):
     start_epoch = 0
-    data_loader = DataLoader(dataset=FaceDetectSet(416, True), batch_size=args.batch, shuffle=True, num_workers=16)
+    data_loader = DataLoader(dataset=FaceDetectSet(512, True), batch_size=args.batch, shuffle=True, num_workers=16)
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda:0" if use_cuda else "cpu")
     model = MSSD()
     print("add graph")
-    writer.add_graph(model, torch.zeros((1, 3, 416, 416)))
+    writer.add_graph(model, torch.zeros((1, 3, 512, 512)))
     print("add graph over")
     if args.pretrained and os.path.exists(MODEL_SAVE_PATH):
         print("loading ...")
@@ -51,7 +51,6 @@ def train(args):
     loss_func = MLoss().to(device)
     to_pil_img = tfs.ToPILImage()
     to_tensor = tfs.ToTensor()
-    pred_deal = MPred()
 
     for epoch in range(start_epoch, start_epoch+args.epoes):
         model.train()
@@ -79,15 +78,14 @@ def train(args):
 
         #save one pic and output
         pil_img = to_pil_img(last_img_tensor[0].cpu())
-        output = pred_deal(output)
-        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.5)
+        bboxes = tensor2bbox(output[0], 512, thresh=0.5)
         # bboxes = nms(bboxes, 0.6, 0.5)
         draw = ImageDraw.Draw(pil_img)
         for bbox in bboxes:
             draw.rectangle((bbox[1] - bbox[3] / 2, bbox[2] - bbox[4] / 2, bbox[1] + bbox[3] / 2, bbox[2] + bbox[4] / 2),
                            outline=(0, 255, 0))
         writer.add_image("img: "+str(epoch), to_tensor(pil_img))
-        scheduler.step()
+        # scheduler.step()
 
     if not os.path.isdir('data'):
         os.mkdir('data')

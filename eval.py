@@ -73,7 +73,7 @@ def eval(args):
         print("c,e,m=",correct_num, error_num, miss_num)
     print("correct rate: "+str(correct_num / all_num*100)+"%")
     print("error rate: " + str(error_num / all_num*100)+"%")
-    print("miss rate: " + str(all_num / all_num*100)+"%")
+    print("miss rate: " + str(miss_num / all_num*100)+"%")
     print("mean inferince is: " + str(all_cost / len(data_loader)))
 
 if __name__=='__main__':

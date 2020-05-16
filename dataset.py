@@ -68,11 +68,7 @@ class FaceDetectSet(Dataset):
         img_tensor = self.pic_strong(img)
 
         # label
-        feature_map = [0, 0, 0]
-        feature_map[0] = (self.img_size / (2 ** 3))
-        feature_map[1] = (self.img_size / (2 ** 4))
-        feature_map[2] = (self.img_size / (2 ** 5))
-        label_tensor = bbox2tensor(scaled_bboxes, self.img_size, feature_map)
+        label_tensor = bbox2tensor(scaled_bboxes, self.img_size)
         return img_tensor, label_tensor
 
 
@@ -99,6 +95,7 @@ class data_prefetcher():
         target = self.next_target
         self.preload()
         return input, target
+
 
 def pic_resize2square(img, des_size, bboxes, is_random=True):
     rows = img.height
@@ -133,11 +130,14 @@ def pic_resize2square(img, des_size, bboxes, is_random=True):
     return scaled_img, new_bboxes
 
 
-def bbox2tensor(bboxes, img_size, feature_map):
-    label_tensor = torch.zeros((int((feature_map[0] ** 2) + (feature_map[1] ** 2) + (feature_map[2] ** 2)), 5))
-    bbox_index = 0
-    thresh1 = img_size/10
-    thresh2 = img_size/20
+feature_map = [64, 32, 16, 8, 4, 2]
+
+
+def bbox2tensor(bboxes, img_size):
+    bboxes_num = 0
+    for cell_num in feature_map:
+        bboxes_num += cell_num**2
+    label_tensor = torch.zeros((bboxes_num, 5))
 
     for box in bboxes:
         w = box[2]
@@ -146,20 +146,20 @@ def bbox2tensor(bboxes, img_size, feature_map):
         cell_size = 0
         start_index = 0
         feature_size = 0
-        if max_edge > thresh1:
-            # predict by first feature map
-            start_index = int((feature_map[0] ** 2) + (feature_map[1] ** 2))
-            cell_size = img_size/feature_map[2]
-            feature_size = feature_map[2]
-        elif max_edge > thresh2:
-            # predict by second feature map
-            start_index = int((feature_map[0] ** 2))
-            cell_size = img_size / feature_map[1]
-            feature_size = feature_map[1]
-        else:
-            # predict by third feature map
-            start_index = 0
-            cell_size = img_size / feature_map[0]
+        anchor_max = 0
+
+        for cell_num in reversed(feature_map):
+            cell_size = img_size / cell_num
+            if max_edge >= cell_size:
+                start_index = 0
+                for tmp in feature_map:
+                    if tmp > cell_num:
+                        start_index += tmp**2
+                    else:
+                        break
+                feature_size = cell_num
+                break
+        if feature_size == 0:
             feature_size = feature_map[0]
 
         cell_x_index = math.floor(box[0] / cell_size)
@@ -168,16 +168,15 @@ def bbox2tensor(bboxes, img_size, feature_map):
         cell_y_bias = box[1] % cell_size
         p_box = label_tensor[math.floor(start_index + cell_y_index * feature_size + cell_x_index), :]
         p_box[0] = 1
-        p_box[1] = cell_x_bias/cell_size
-        p_box[2] = cell_y_bias/cell_size
-        p_box[3] = box[2]/img_size
-        p_box[4] = box[3]/img_size
-
+        p_box[1] = cell_x_bias / cell_size
+        p_box[2] = cell_y_bias / cell_size
+        p_box[3] = (box[2] - cell_size) / cell_size
+        p_box[4] = (box[3] - cell_size) / cell_size
 
     return label_tensor
 
 
-def tensor2bbox(out_tensor, img_size, feature_map, thresh=0.5):
+def tensor2bbox(out_tensor, img_size, thresh=0.5):
     assert out_tensor.dim() == 2
     bboxes = []
     for i in range(out_tensor.shape[0]):
@@ -186,24 +185,27 @@ def tensor2bbox(out_tensor, img_size, feature_map, thresh=0.5):
         if bbox[0] > thresh:
             feature_size = 0
             r_index = 0
-            thresh_1 = feature_map[0] ** 2 + feature_map[1] ** 2
-            thresh_2 = feature_map[0] ** 2
-            if i > thresh_1:
-                feature_size = feature_map[2]
-                r_index = i - thresh_1
-            elif i > thresh_2:
-                feature_size = feature_map[1]
-                r_index = i - thresh_2
-            else:
-                feature_size = feature_map[0]
-                r_index = i
+            cell_size = 0
+            for cell_num in reversed(feature_map):
+                _start = 0
+                for tmp in feature_map:
+                    if tmp > cell_num:
+                        _start += tmp**2
+                    else:
+                        break
+                if i >= _start:
+                    r_index = i - _start
+                    feature_size = cell_num
+                    cell_size = img_size / feature_size
+                    break
+
             start_x = math.floor(r_index % feature_size)
             start_y = math.floor(r_index / feature_size)
-            cell_size = img_size / feature_size
+
             bbox[1] = bbox[1] * cell_size + start_x * cell_size
             bbox[2] = bbox[2] * cell_size + start_y * cell_size
-            bbox[3] = bbox[3] * img_size
-            bbox[4] = bbox[4] * img_size
+            bbox[3] = bbox[3] * cell_size + cell_size
+            bbox[4] = bbox[4] * cell_size + cell_size
             bboxes.append(bbox)
     return bboxes
 
@@ -224,6 +226,5 @@ def test_dataset():
         plt.imshow(origin_img)
         plt.show()
         plt.close()
-
 
 # test_dataset()
