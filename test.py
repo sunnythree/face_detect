@@ -24,7 +24,6 @@ def test():
 
     to_pil_img = tfs.ToPILImage()
     to_tensor = tfs.ToTensor()
-    pred_deal = MPred()
 
     for i_batch, sample_batched in enumerate(data_loader):
         img_tensor = sample_batched[0].to(device)
@@ -34,7 +33,6 @@ def test():
         output = model(img_tensor)
         end = time.time()
         print("end inference, cost is: "+str(end-start))
-        output = pred_deal(output)
 
 
         # save one pic and output

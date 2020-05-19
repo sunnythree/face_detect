@@ -78,6 +78,23 @@ def get_m_index(data):
             indexs.append(i)
     return indexs
 
+class MPred(nn.Module):
+    def __init__(self):
+        super(MPred, self).__init__()
+
+    def forward(self, x1, x2, x3, img_size=416, anchor=[8, 24, 72]):
+        out1_cxy = torch.sigmoid(x1[:, 0:3, :])
+        out1_wh = anchor[0]*torch.exp(x1[:, 3:5, :])/img_size
+        out1 = torch.cat([out1_cxy, out1_wh], dim=1)
+
+        out2_cxy = torch.sigmoid(x2[:, 0:3, :])
+        out2_wh = anchor[1]*torch.exp(x2[:, 3:5, :])/img_size
+        out2 = torch.cat([out2_cxy, out2_wh], dim=1)
+
+        out3_cxy = torch.sigmoid(x3[:, 0:3, :])
+        out3_wh = anchor[2]*torch.exp(x3[:, 3:5, :])/img_size
+        out3 = torch.cat([out3_cxy, out3_wh], dim=1)
+        return out1, out2, out3
 
 class MSSD(nn.Module):
     def __init__(self):
@@ -94,6 +111,7 @@ class MSSD(nn.Module):
         self.o3 = BaseBlock(5, 5, 3, 1, 1)
         self.ox1 = BaseBlock(512, 5, 1, 1)
         self.ox2 = BaseBlock(256, 5, 1, 1)
+        self.pred = MPred()
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -126,11 +144,9 @@ class MSSD(nn.Module):
         o1 = o1.view(o1.shape[0], o1.shape[1], o1.shape[2] * o1.shape[3])
         o2 = o2.view(o2.shape[0], o2.shape[1], o2.shape[2] * o2.shape[3])
         o3 = o3.view(o3.shape[0], o3.shape[1], o3.shape[2] * o3.shape[3])
-        out = torch.cat((o3, o2, o1), dim=2)
+        out = torch.cat(self.pred(o3, o2, o1), dim=2)
         out = out.permute(0, 2, 1)
         return out
-
-
 
 
 def test():

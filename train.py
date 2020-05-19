@@ -51,7 +51,6 @@ def train(args):
     loss_func = MLoss().to(device)
     to_pil_img = tfs.ToPILImage()
     to_tensor = tfs.ToTensor()
-    pred_deal = MPred()
 
     for epoch in range(start_epoch, start_epoch+args.epoes):
         model.train()
@@ -79,7 +78,6 @@ def train(args):
 
         #save one pic and output
         pil_img = to_pil_img(last_img_tensor[0].cpu())
-        output = pred_deal(output)
         bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.5)
         # bboxes = nms(bboxes, 0.6, 0.5)
         draw = ImageDraw.Draw(pil_img)

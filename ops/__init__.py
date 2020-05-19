@@ -1,1 +1,1 @@
-from .mloss import MLoss, MPred
+from .mloss import MLoss

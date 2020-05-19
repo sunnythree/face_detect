@@ -29,7 +29,7 @@ def getOne(file):
 
 def get_all_files_and_bboxes(is_train=True):
     if is_train:
-        file = open(SPLIT_PATH + TRAIN_SET_FILE)
+        file = open(SPLIT_PATH + MTRAIN)
     else:
         file = open(SPLIT_PATH + VAL_SET_FILE)
     datas = []
@@ -136,8 +136,8 @@ def pic_resize2square(img, des_size, bboxes, is_random=True):
 def bbox2tensor(bboxes, img_size, feature_map):
     label_tensor = torch.zeros((int((feature_map[0] ** 2) + (feature_map[1] ** 2) + (feature_map[2] ** 2)), 5))
     bbox_index = 0
-    thresh1 = img_size/10
-    thresh2 = img_size/20
+    thresh1 = 48
+    thresh2 = 16
 
     for box in bboxes:
         w = box[2]
