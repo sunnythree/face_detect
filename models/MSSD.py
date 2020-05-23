@@ -102,15 +102,19 @@ class MSSD(nn.Module):
         self.b1 = BaseBlock(3, 64, 5, 1, 2)
         self.down_sample = nn.MaxPool2d(kernel_size=2, stride=2)
         self.bx1 = Bottleneck(64, 128, 1)
-        self.bx2 = Bottleneck(128, 256, 1)
-        self.bx3 = Bottleneck(256, 512, 1)
-        self.bx4 = Bottleneck(512, 64, 1)
-        self.o1 = BaseBlock(64, 5, 3, 1, 1)
+        self.bx1_1 = Bottleneck(128, 256, 1)
+        self.bx2 = Bottleneck(256, 256, 1)
+        self.bx2_1 = Bottleneck(256, 128, 1)
+        self.bx3 = Bottleneck(128, 128, 1)
+        self.bx4 = Bottleneck(128, 128, 1)
+        self.bx5 = Bottleneck(128, 128, 1)
+
+        self.o1 = BaseBlock(128, 5, 3, 1, 1)
+        self.o2 = BaseBlock(128, 5, 3, 1, 1)
+        self.o3 = BaseBlock(128, 5, 3, 1, 1)
+
         self.up_sample = nn.Upsample(scale_factor=2)
-        self.o2 = BaseBlock(5, 5, 3, 1, 1)
-        self.o3 = BaseBlock(5, 5, 3, 1, 1)
-        self.ox1 = BaseBlock(512, 5, 1, 1)
-        self.ox2 = BaseBlock(256, 5, 1, 1)
+
         self.pred = MPred()
 
         for m in self.modules():
@@ -125,22 +129,24 @@ class MSSD(nn.Module):
         x = self.b1(x)                         # 416
         x = self.down_sample(x)                # 208
         x = self.bx1(x)                        # 208
+        x = self.bx1_1(x)                      # 208
         x = self.down_sample(x)                # 104
-        x1 = self.bx2(x)                       # 104
-        x1 = self.down_sample(x1)                # 52
-        x2 = self.bx3(x1)                      # 52
-        x2 = self.down_sample(x2)                # 26
-        x3 = self.bx4(x2)                      # 26
-        x3 = self.down_sample(x3)                # 13
+        x = self.bx2(x)                        # 104
+        x = self.bx2_1(x)                      # 104
+        x1 = self.down_sample(x)               # 52
+        x1 = self.bx3(x1)                      # 52
+        x2 = self.down_sample(x1)              # 26
+        x2 = self.bx4(x2)                      # 26
+        x3 = self.down_sample(x2)              # 13
+        x3 = self.bx5(x3)
+
+        u2 = self.up_sample(x3)
+        u1 = self.up_sample(x2)
+
         o1 = self.o1(x3)                       # 13
-        ox1 = self.ox1(x2)                     # 26
-        o2 = self.up_sample(o1)                # 26
-        o2 = o2+ox1                            # 26
-        o2 = self.o2(o2)                       # 26
-        ox2 = self.ox2(x1)                     # 26
-        o3 = self.up_sample(o2)                # 52
-        o3 = o3+ox2                            # 52
-        o3 = self.o3(o3)                       # 52
+        o2 = self.o2(x2+u2)                    # 26
+        o3 = self.o3(x1+u1)                    # 52
+
         o1 = o1.view(o1.shape[0], o1.shape[1], o1.shape[2] * o1.shape[3])
         o2 = o2.view(o2.shape[0], o2.shape[1], o2.shape[2] * o2.shape[3])
         o3 = o3.view(o3.shape[0], o3.shape[1], o3.shape[2] * o3.shape[3])

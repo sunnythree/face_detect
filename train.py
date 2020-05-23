@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument('--epoes', "-e", type=int, default=30, help='train epoes')
     parser.add_argument('--lr', "-l", type=float, default=0.001, help='learn rate')
     parser.add_argument('--pretrained', "-p", type=bool, default=False, help='prepare trained')
+    parser.add_argument('--mini_batch', "-m", type=int, default=1, help='mini batch')
     return parser.parse_args()
 
 def train(args):
@@ -58,15 +59,18 @@ def train(args):
         img_tensor, label_tensor = prefetcher.next()
         last_img_tensor = img_tensor
         last_label_tensor = label_tensor
+        optimizer.zero_grad()
         i_batch = 0
         while img_tensor is not None:
             last_img_tensor = img_tensor
             last_label_tensor = label_tensor
-            optimizer.zero_grad()
             output = model(img_tensor)
             loss = loss_func(output, label_tensor)
             loss.backward()
-            optimizer.step()
+            if i_batch % args.mini_batch == 0:
+                optimizer.step()
+                optimizer.zero_grad()
+
             train_loss = loss.item()
             global_step = epoch*len(data_loader)+i_batch
             progress_bar(i_batch, len(data_loader), 'loss: %f, epeche: %d'%(train_loss, epoch))

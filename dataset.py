@@ -29,7 +29,7 @@ def getOne(file):
 
 def get_all_files_and_bboxes(is_train=True):
     if is_train:
-        file = open(SPLIT_PATH + MTRAIN)
+        file = open(SPLIT_PATH + TRAIN_SET_FILE)
     else:
         file = open(SPLIT_PATH + VAL_SET_FILE)
     datas = []
@@ -63,8 +63,8 @@ class FaceDetectSet(Dataset):
         # img
         img_path = self.PIC_PATH + self.datas[item]['img']
         img_path = img_path.replace('\n', '')
-        img = Image.open(img_path)
-        img, scaled_bboxes = pic_resize2square(img, self.img_size, self.datas[item]['bboxes'], True)
+        img_origin = Image.open(img_path)
+        img, scaled_bboxes = pic_resize2square(img_origin, self.img_size, self.datas[item]['bboxes'], True)
         img_tensor = self.pic_strong(img)
 
         # label
@@ -73,7 +73,7 @@ class FaceDetectSet(Dataset):
         feature_map[1] = (self.img_size / (2 ** 4))
         feature_map[2] = (self.img_size / (2 ** 5))
         label_tensor = bbox2tensor(scaled_bboxes, self.img_size, feature_map)
-        return img_tensor, label_tensor
+        return img_tensor, label_tensor, (img_path, img_origin.size)
 
 
 class data_prefetcher():
@@ -125,11 +125,12 @@ def pic_resize2square(img, des_size, bboxes, is_random=True):
     scaled_img = Image.new("RGB", (des_size, des_size))
     scaled_img.paste(new_img, box=(rand_x, rand_y))
     new_bboxes = []
-    for box in bboxes:
-        for i in range(len(box)):
-            box[i] *= scale_rate
-        new_bboxes.append(
-            (box[0] + rand_x + box[2] / 2, box[1] + rand_y + box[3] / 2, box[2], box[3]))
+    if bboxes is not None:
+        for box in bboxes:
+            for i in range(len(box)):
+                box[i] *= scale_rate
+            new_bboxes.append(
+                (box[0] + rand_x + box[2] / 2, box[1] + rand_y + box[3] / 2, box[2], box[3]))
     return scaled_img, new_bboxes
 
 

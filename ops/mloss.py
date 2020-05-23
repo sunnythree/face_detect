@@ -19,9 +19,10 @@ class MLoss(nn.Module):
                 if label[0].item() > thresh:
                     outs.append(x[i, j, :])
                     labels.append(label)
+
         outs_tensor = torch.stack(outs)
         labels_tensor = torch.stack(labels)
         diff = torch.pow((labels_tensor-outs_tensor), 2)
-        diff_c = alpha * torch.pow(outs_tensor[:, 0], 2)
-        diff_bg = alpha * torch.pow(x[:, :, 0], 2)
+        diff_c = alpha * torch.pow(0-outs_tensor[:, 0], 2)
+        diff_bg = alpha * torch.pow(0-x[:, :, 0], 2)
         return diff.sum() + diff_bg.sum() - diff_c.sum()

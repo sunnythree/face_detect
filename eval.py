@@ -6,13 +6,14 @@ import torch
 from utils import nms, box_iou
 import argparse
 import time
+import os
 
 MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--confidence', "-c", type=float, default=0.6, help='confidence')
-    parser.add_argument('--thresh', "-t", type=float, default=0.5, help='iou thresh')
+    parser.add_argument('--thresh', "-t", type=float, default=0.3, help='iou thresh')
     return parser.parse_args()
 
 def statistics_result(pred_boxes, label_boxes, iou_thresh=0.5):
@@ -47,20 +48,37 @@ def eval(args):
     state = torch.load(MODEL_SAVE_PATH)
     model.load_state_dict(state['net'])
 
-    pred_deal = MPred()
     correct_num = 0
     error_num = 0
     miss_num = 0
     all_num = 0
     all_cost = 0
+
+    if not os.path.exists("data"):
+        os.mkdir("data")
+    if not os.path.exists("data/eval"):
+        os.mkdir("data/eval")
+
+
     for i_batch, sample_batched in enumerate(data_loader):
         img_tensor = sample_batched[0].to(device)
         label_tensor = sample_batched[1].to(device)
+        img_path = sample_batched[2][0][0]
+        img_path = img_path[img_path.find("images/")+7:len(img_path)]
+        path, file_name = img_path.split('/')
+        if not os.path.exists("data/eval/"+path):
+            os.mkdir("data/eval/"+path)
+        path, img_name = img_path.split('/')
+        out_name = img_name.replace("jpg", "txt")
+        out_name = out_name.replace("png", "txt")
+        if os.path.exists("data/eval/"+path+"/"+out_name):
+            os.remove("data/eval/"+path+"/"+out_name)
+        eval_result = open("data/eval/"+path+"/"+out_name, "x")
+        eval_result.write(file_name+"\n")
         start = time.time()
         output = model(img_tensor)
         end = time.time()
         all_cost += (end - start)
-        output = pred_deal(output)
 
         bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=args.confidence)
         bboxes = nms(bboxes, args.confidence, args.thresh)
@@ -70,10 +88,19 @@ def eval(args):
         correct_num += c
         error_num += e
         miss_num += m
-        print("c,e,m=",correct_num, error_num, miss_num)
+        print("c,e,m=", correct_num, error_num, miss_num)
+        eval_result.write(str(len(bboxes)) + "\n")
+        for bbox in bboxes:
+            bbox[1] *= sample_batched[2][1][0].item()/416
+            bbox[2] *= sample_batched[2][1][1].item()/416
+            bbox[3] *= sample_batched[2][1][0].item()/416
+            bbox[4] *= sample_batched[2][1][1].item()/416
+            eval_result.write(str(bbox[1].item())+' '+str(bbox[2].item())+' '+str(bbox[3].item())+' '+str(bbox[4].item())+' '+str(bbox[0].item())+"\n")
+        eval_result.close()
+
     print("correct rate: "+str(correct_num / all_num*100)+"%")
     print("error rate: " + str(error_num / all_num*100)+"%")
-    print("miss rate: " + str(all_num / all_num*100)+"%")
+    print("miss rate: " + str(miss_num / all_num*100)+"%")
     print("mean inferince is: " + str(all_cost / len(data_loader)))
 
 if __name__=='__main__':
