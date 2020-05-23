@@ -45,6 +45,7 @@ def get_all_files_and_bboxes(is_train=True):
 
 class FaceDetectSet(Dataset):
     def __init__(self, img_size, is_train=True):
+        self.is_train = is_train
         if is_train:
             self.PIC_PATH = TRAIN_IMG_PATH
         else:
@@ -73,7 +74,10 @@ class FaceDetectSet(Dataset):
         feature_map[1] = (self.img_size / (2 ** 4))
         feature_map[2] = (self.img_size / (2 ** 5))
         label_tensor = bbox2tensor(scaled_bboxes, self.img_size, feature_map)
-        return img_tensor, label_tensor, (img_path, img_origin.size)
+        if self.is_train:
+            return img_tensor, label_tensor
+        else:
+            return img_tensor, label_tensor, (img_path, img_origin.size)
 
 
 class data_prefetcher():
