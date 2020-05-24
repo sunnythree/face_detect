@@ -109,8 +109,8 @@ def eval(args):
             # change format
             bbox[1] = bbox[1] - bbox[3]/2
             bbox[2] = bbox[2] - bbox[4]/2
-            bbox[3] = bbox[1] + bbox[3]/2
-            bbox[4] = bbox[2] + bbox[4]/2
+            bbox[3] = bbox[1] + bbox[3]
+            bbox[4] = bbox[2] + bbox[4]
 
             eval_result.write(str(bbox[1].item())+' '+str(bbox[2].item())+' '+str(bbox[3].item())+' '+str(bbox[4].item())+' '+str(bbox[0].item())+"\n")
         eval_result.close()

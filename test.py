@@ -51,8 +51,8 @@ def statistics_result(pred_boxes, label_boxes, iou_thresh=0.5):
 
 def eval(args):
     use_cuda = torch.cuda.is_available()
-    # device = torch.device("cuda" if use_cuda else "cpu")
-    device = torch.device("cpu")
+    device = torch.device("cuda" if use_cuda else "cpu")
+    # device = torch.device("cpu")
     model = MSSD().to(device)
 
     # load parameter
@@ -115,8 +115,8 @@ def eval(args):
             # change format
             bbox[1] = bbox[1] - bbox[3] / 2
             bbox[2] = bbox[2] - bbox[4] / 2
-            bbox[3] = bbox[1] + bbox[3] / 2
-            bbox[4] = bbox[2] + bbox[4] / 2
+            bbox[3] = bbox[1] + bbox[3]
+            bbox[4] = bbox[2] + bbox[4]
 
         if args.show:
             draw = ImageDraw.Draw(img_origin)
