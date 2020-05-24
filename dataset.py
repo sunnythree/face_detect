@@ -114,27 +114,30 @@ def pic_resize2square(img, des_size, bboxes, is_random=True):
     new_cols = des_size
     rand_x = 0
     rand_y = 0
+
     if rows > cols:
         scale_rate = des_size / rows
         new_cols = math.ceil(cols * scale_rate)
         # print(rows, cols, new_rows, new_cols, scale_rate)
         if is_random:
-            rand_x = random.randint(0, math.floor(new_rows - new_cols))
+            rand_x = random.randint(0, math.floor(des_size - new_cols))
         else:
-            rand_x = int(math.floor(new_rows - new_cols) / 2)
+            rand_x = int(math.floor((des_size - new_cols) / 2))
 
     elif cols > rows:
         scale_rate = des_size / cols
         new_rows = math.ceil(rows * scale_rate)
         # print(rows, cols, new_rows, new_cols, scale_rate)
         if is_random:
-            rand_y = random.randint(0, math.floor(new_cols - new_rows))
+            rand_y = random.randint(0, math.floor(des_size - new_rows))
         else:
-            rand_x = int(math.floor(new_cols - new_rows) / 2)
+            rand_y = int(math.floor((des_size - new_rows) / 2))
 
     new_img = img.resize((new_cols, new_rows))
+
     scaled_img = Image.new("RGB", (des_size, des_size))
     scaled_img.paste(new_img, box=(rand_x, rand_y))
+
     new_bboxes = []
     if bboxes is not None:
         for box in bboxes:

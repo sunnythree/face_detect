@@ -75,8 +75,9 @@ def eval(args):
         img_path = line
         img_path = img_path.replace('\n', '')
         img_origin = Image.open(TEST_IMG_PATH+img_path)
-        img, scaled_bboxes = pic_resize2square(img_origin, 416, [], False)
-        img_tensor = to_tensor(img).to(device)
+        scaled_img, scaled_bboxes = pic_resize2square(img_origin, 416, [], False)
+
+        img_tensor = to_tensor(scaled_img).to(device)
         img_tensor = img_tensor.view(1, 3, 416, 416)
         path, file_name = img_path.split('/')
         if not os.path.exists("data/test/"+path):
@@ -92,8 +93,7 @@ def eval(args):
         output = model(img_tensor)
         end = time.time()
         all_cost += (end - start)
-        plt.imshow(img)
-        plt.show()
+
         bboxes = tensor2bbox(output[0].cpu(), 416, [52, 26, 13], thresh=args.confidence)
         bboxes = nms(bboxes, args.confidence, args.thresh)
 
