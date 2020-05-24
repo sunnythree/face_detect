@@ -44,8 +44,9 @@ def get_all_files_and_bboxes(is_train=True):
 
 
 class FaceDetectSet(Dataset):
-    def __init__(self, img_size, is_train=True):
+    def __init__(self, img_size, is_train=True, is_random=True):
         self.is_train = is_train
+        self.is_random = is_random
         if is_train:
             self.PIC_PATH = TRAIN_IMG_PATH
         else:
@@ -65,7 +66,7 @@ class FaceDetectSet(Dataset):
         img_path = self.PIC_PATH + self.datas[item]['img']
         img_path = img_path.replace('\n', '')
         img_origin = Image.open(img_path)
-        img, scaled_bboxes = pic_resize2square(img_origin, self.img_size, self.datas[item]['bboxes'], True)
+        img, scaled_bboxes = pic_resize2square(img_origin, self.img_size, self.datas[item]['bboxes'], self.is_random)
         img_tensor = self.pic_strong(img)
 
         # label
@@ -117,13 +118,19 @@ def pic_resize2square(img, des_size, bboxes, is_random=True):
         scale_rate = des_size / rows
         new_cols = math.ceil(cols * scale_rate)
         # print(rows, cols, new_rows, new_cols, scale_rate)
-        rand_x = random.randint(0, math.floor(new_rows - new_cols))
+        if is_random:
+            rand_x = random.randint(0, math.floor(new_rows - new_cols))
+        else:
+            rand_x = int(math.floor(new_rows - new_cols) / 2)
 
     elif cols > rows:
         scale_rate = des_size / cols
         new_rows = math.ceil(rows * scale_rate)
         # print(rows, cols, new_rows, new_cols, scale_rate)
-        rand_y = random.randint(0, math.floor(new_cols - new_rows))
+        if is_random:
+            rand_y = random.randint(0, math.floor(new_cols - new_rows))
+        else:
+            rand_x = int(math.floor(new_cols - new_rows) / 2)
 
     new_img = img.resize((new_cols, new_rows))
     scaled_img = Image.new("RGB", (des_size, des_size))

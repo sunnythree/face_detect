@@ -7,6 +7,7 @@ from utils import nms, box_iou
 import argparse
 import time
 import os
+import math
 
 MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
 
@@ -39,7 +40,7 @@ def statistics_result(pred_boxes, label_boxes, iou_thresh=0.5):
 
 
 def eval(args):
-    data_loader = DataLoader(dataset=FaceDetectSet(416, False), batch_size=1, shuffle=True, num_workers=1)
+    data_loader = DataLoader(dataset=FaceDetectSet(416, False, False), batch_size=1, shuffle=False, num_workers=1)
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     model = MSSD().to(device)
@@ -90,11 +91,27 @@ def eval(args):
         miss_num += m
         print("c,e,m=", correct_num, error_num, miss_num)
         eval_result.write(str(len(bboxes)) + "\n")
+        width = sample_batched[2][1][0].item()
+        height = sample_batched[2][1][1].item()
+        if width > height:
+            scale_rate = 416.0/width
+            x_offset = 0
+            y_offset = math.floor((416.0 - height*scale_rate)/2)
+        else:
+            scale_rate = 416.0/height
+            x_offset = math.floor((416.0 - width*scale_rate)/2)
+            y_offset = 0
         for bbox in bboxes:
-            bbox[1] *= sample_batched[2][1][0].item()/416
-            bbox[2] *= sample_batched[2][1][1].item()/416
-            bbox[3] *= sample_batched[2][1][0].item()/416
-            bbox[4] *= sample_batched[2][1][1].item()/416
+            bbox[1] = (bbox[1] - x_offset) / scale_rate
+            bbox[2] = (bbox[2] - y_offset) / scale_rate
+            bbox[3] = bbox[3] / scale_rate
+            bbox[4] = bbox[4] / scale_rate
+            # change format
+            bbox[1] = bbox[1] - bbox[3]/2
+            bbox[2] = bbox[2] - bbox[4]/2
+            bbox[3] = bbox[1] + bbox[3]/2
+            bbox[4] = bbox[2] + bbox[4]/2
+
             eval_result.write(str(bbox[1].item())+' '+str(bbox[2].item())+' '+str(bbox[3].item())+' '+str(bbox[4].item())+' '+str(bbox[0].item())+"\n")
         eval_result.close()
 
