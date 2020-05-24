@@ -1,4 +1,8 @@
 .idea
 *.pyc
 /log
+/WiderFace-Eval-Python/ground_truth
+/WiderFace-Eval-Python/build
+/data/eval
+/data/test
 
