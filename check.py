@@ -14,7 +14,7 @@ MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
 
 def test():
     start_epoch = 0
-    data_loader = DataLoader(dataset=FaceDetectSet(416, False, False), batch_size=1, shuffle=True, num_workers=1)
+    data_loader = DataLoader(dataset=FaceDetectSet(416, True, False), batch_size=1, shuffle=True, num_workers=1)
     use_cuda = torch.cuda.is_available()
     device = torch.device("cpu")
     model = MSSD().to(device)
@@ -39,33 +39,14 @@ def test():
         # save one pic and output
         pil_img = to_pil_img(sample_batched[0][0])
         print("start show1")
-        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.5)
+        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.6)
         print("start show2")
         print(bboxes)
         #bboxes = nms(bboxes, 0.2, 0.3)
         #print(bboxes)
         print("get box num: "+str(len(bboxes)))
         draw = ImageDraw.Draw(pil_img)
-        width = sample_batched[2][1][0].item()
-        height = sample_batched[2][1][1].item()
-        if width > height:
-            scale_rate = 416.0 / width
-            x_offset = 0
-            y_offset = math.floor((416.0 - height * scale_rate) / 2)
-        else:
-            scale_rate = 416.0 / height
-            x_offset = math.floor((416.0 - width * scale_rate) / 2)
-            y_offset = 0
-        for bbox in bboxes:
-            bbox[1] = (bbox[1] - x_offset) / scale_rate
-            bbox[2] = (bbox[2] - y_offset) / scale_rate
-            bbox[3] = bbox[3] / scale_rate
-            bbox[4] = bbox[4] / scale_rate
-            # change format
-            bbox[1] = bbox[1] - bbox[3] / 2
-            bbox[2] = bbox[2] - bbox[4] / 2
-            bbox[3] = bbox[1] + bbox[3] / 2
-            bbox[4] = bbox[2] + bbox[4] / 2
+
 
         for bbox in bboxes:
             draw.rectangle((bbox[1] - bbox[3] / 2, bbox[2] - bbox[4] / 2, bbox[1] + bbox[3] / 2, bbox[2] + bbox[4] / 2),

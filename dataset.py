@@ -151,31 +151,34 @@ def pic_resize2square(img, des_size, bboxes, is_random=True):
 def bbox2tensor(bboxes, img_size, feature_map):
     label_tensor = torch.zeros((int((feature_map[0] ** 2) + (feature_map[1] ** 2) + (feature_map[2] ** 2)), 5))
     bbox_index = 0
-    thresh1 = 48
-    thresh2 = 16
+    thresh1 = 72
+    thresh2 = 24
+    thresh3 = 8
 
     for box in bboxes:
         w = box[2]
         h = box[3]
-        max_edge = max(w, h)
+        mean_edge = (w + h)/2
         cell_size = 0
         start_index = 0
         feature_size = 0
-        if max_edge > thresh1:
+        if mean_edge > thresh1:
             # predict by first feature map
             start_index = int((feature_map[0] ** 2) + (feature_map[1] ** 2))
             cell_size = img_size/feature_map[2]
             feature_size = feature_map[2]
-        elif max_edge > thresh2:
+        elif mean_edge > thresh2:
             # predict by second feature map
             start_index = int((feature_map[0] ** 2))
             cell_size = img_size / feature_map[1]
             feature_size = feature_map[1]
-        else:
+        elif mean_edge > thresh3:
             # predict by third feature map
             start_index = 0
             cell_size = img_size / feature_map[0]
             feature_size = feature_map[0]
+        else:
+            continue
 
         cell_x_index = math.floor(box[0] / cell_size)
         cell_x_bias = box[0] % cell_size

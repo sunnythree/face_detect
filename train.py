@@ -74,8 +74,7 @@ def train(args):
             train_loss = loss.item()
             global_step = epoch*len(data_loader)+i_batch
             progress_bar(i_batch, len(data_loader), 'loss: %f, epeche: %d'%(train_loss, epoch))
-            if i_batch % 3 == 0:
-                writer.add_scalar("loss", train_loss, global_step=global_step)
+            writer.add_scalar("loss", train_loss, global_step=global_step)
             img_tensor, label_tensor = prefetcher.next()
             i_batch += 1
 

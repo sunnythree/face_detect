@@ -3,12 +3,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-cfg = {
-    'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'VGG13': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'VGG16': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'VGG19': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
-}
 
 
 class Bottleneck(nn.Module):
@@ -82,7 +76,7 @@ class MPred(nn.Module):
     def __init__(self):
         super(MPred, self).__init__()
 
-    def forward(self, x1, x2, x3, img_size=416, anchor=[8, 24, 72]):
+    def forward(self, x1, x2, x3, img_size=416, anchor=[16, 48, 96]):
         out1_cxy = torch.sigmoid(x1[:, 0:3, :])
         out1_wh = anchor[0]*torch.exp(x1[:, 3:5, :])/img_size
         out1 = torch.cat([out1_cxy, out1_wh], dim=1)
@@ -99,12 +93,13 @@ class MPred(nn.Module):
 class MSSD(nn.Module):
     def __init__(self):
         super(MSSD, self).__init__()
-        self.b1 = BaseBlock(3, 64, 5, 1, 2)
+        self.b1 = BaseBlock(3, 32, 3, 1, 1)
+        self.b1_1 = BaseBlock(32, 64, 3, 1, 1)
         self.down_sample = nn.MaxPool2d(kernel_size=2, stride=2)
         self.bx1 = Bottleneck(64, 128, 1)
         self.bx1_1 = Bottleneck(128, 256, 1)
-        self.bx2 = Bottleneck(256, 256, 1)
-        self.bx2_1 = Bottleneck(256, 128, 1)
+        self.bx2 = Bottleneck(256, 128, 1)
+        self.bx2_1 = Bottleneck(128, 128, 1)
         self.bx3 = Bottleneck(128, 128, 1)
         self.bx4 = Bottleneck(128, 128, 1)
         self.bx5 = Bottleneck(128, 128, 1)
@@ -113,7 +108,7 @@ class MSSD(nn.Module):
         self.o2 = BaseBlock(128, 5, 3, 1, 1)
         self.o3 = BaseBlock(128, 5, 3, 1, 1)
 
-        self.up_sample = nn.Upsample(scale_factor=2)
+        self.up_sample = nn.Upsample(scale_factor=2, mode='bilinear')
 
         self.pred = MPred()
 
@@ -127,6 +122,7 @@ class MSSD(nn.Module):
     def forward(self, x):
         # vgg to get feature
         x = self.b1(x)                         # 416
+        x = self.b1_1(x)                       # 416
         x = self.down_sample(x)                # 208
         x = self.bx1(x)                        # 208
         x = self.bx1_1(x)                      # 208
@@ -156,7 +152,7 @@ class MSSD(nn.Module):
 
 
 def test():
-    net = MSSD('VGG11')
+    net = MSSD()
     x = torch.randn(2, 3, 416, 416)
     y = net(x)
     print(y.size())
