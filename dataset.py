@@ -178,6 +178,7 @@ def bbox2tensor(bboxes, img_size, feature_map):
             cell_size = img_size / feature_map[0]
             feature_size = feature_map[0]
         else:
+            # ignore under 8*8 size
             continue
 
         cell_x_index = math.floor(box[0] / cell_size)
