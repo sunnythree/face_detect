@@ -42,8 +42,8 @@ def test():
         bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.6)
         print("start show2")
         print(bboxes)
-        #bboxes = nms(bboxes, 0.2, 0.3)
-        #print(bboxes)
+        bboxes = nms(bboxes, 0.6, 0.3)
+        print(bboxes)
         print("get box num: "+str(len(bboxes)))
         draw = ImageDraw.Draw(pil_img)
 

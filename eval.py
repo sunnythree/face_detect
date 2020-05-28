@@ -13,7 +13,7 @@ MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--confidence', "-c", type=float, default=0.6, help='confidence')
+    parser.add_argument('--confidence', "-c", type=float, default=0.5, help='confidence')
     parser.add_argument('--thresh', "-t", type=float, default=0.3, help='iou thresh')
     return parser.parse_args()
 

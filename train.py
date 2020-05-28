@@ -66,6 +66,9 @@ def train(args):
             last_label_tensor = label_tensor
             output = model(img_tensor)
             loss = loss_func(output, label_tensor)
+            if loss is None:
+                img_tensor, label_tensor = prefetcher.next()
+                continue
             loss.backward()
             if i_batch % args.mini_batch == 0:
                 optimizer.step()

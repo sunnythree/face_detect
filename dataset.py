@@ -54,7 +54,7 @@ class FaceDetectSet(Dataset):
         self.img_size = img_size
         self.datas = get_all_files_and_bboxes(is_train)
         self.pic_strong = tfs.Compose([
-            tfs.ColorJitter(0.5, 0.2, 0.2, 0.1),
+            tfs.ColorJitter(0.5, 0.3, 0.3, 0.1),
             tfs.ToTensor()
         ])
 
@@ -153,7 +153,7 @@ def bbox2tensor(bboxes, img_size, feature_map):
     bbox_index = 0
     thresh1 = 72
     thresh2 = 24
-    thresh3 = 8
+    thresh3 = 6
 
     for box in bboxes:
         w = box[2]
@@ -186,7 +186,7 @@ def bbox2tensor(bboxes, img_size, feature_map):
         cell_y_index = math.floor(box[1] / cell_size)
         cell_y_bias = box[1] % cell_size
         p_box = label_tensor[math.floor(start_index + cell_y_index * feature_size + cell_x_index), :]
-        p_box[0] = 1
+        p_box[0] = 1.0 - 1.0/mean_edge
         p_box[1] = cell_x_bias/cell_size
         p_box[2] = cell_y_bias/cell_size
         p_box[3] = box[2]/img_size

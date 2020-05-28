@@ -218,7 +218,7 @@ def voc_ap(rec, prec):
     return ap
 
 
-def evaluation(pred, gt_path, all, iou_thresh=0.5):
+def evaluation(pred, gt_path, all, iou_thresh=0.3):
     pred = get_preds(pred)
     norm_score(pred)
     facebox_list, event_list, file_list, hard_gt_list, medium_gt_list, easy_gt_list = get_gt_boxes(gt_path)
@@ -347,7 +347,7 @@ if __name__ == '__main__':
     parser.add_argument('--all', help='if test all together', action='store_true')
 
     args = parser.parse_args()
-    evaluation(args.pred, args.gt, args.all, 0.3)
+    evaluation(args.pred, args.gt, args.all, 0.5)
 
 
 
