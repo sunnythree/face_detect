@@ -9,7 +9,7 @@ class MLoss(nn.Module):
         self.mse_loss = nn.MSELoss()
         self.bce_loss = nn.BCELoss()
 
-    def forward(self, x, y, img_size=416, thresh=0.5, alpha=0.1):
+    def forward(self, x, y, img_size=416, thresh=0.5, alpha=0.5):
         batches = x.shape[0]
         cell_num = x.shape[1]
 

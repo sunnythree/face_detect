@@ -121,6 +121,8 @@ def eval(args):
         if args.show:
             draw = ImageDraw.Draw(img_origin)
             for bbox in bboxes:
+                draw.text((bbox[1], bbox[2] - 10), str(round(bbox[0].item(), 2)),
+                          fill=(255, 0, 0))
                 draw.rectangle((bbox[1], bbox[2], bbox[3], bbox[4]), outline=(0, 255, 0))
             plt.imshow(img_origin)
             plt.show()

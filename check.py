@@ -15,7 +15,7 @@ MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
 def test():
     start_epoch = 0
     data_loader = DataLoader(dataset=FaceDetectSet(416, True, False), batch_size=1, shuffle=True, num_workers=1)
-    use_cuda = torch.cuda.is_available()
+    # use_cuda = torch.cuda.is_available()
     device = torch.device("cpu")
     model = MSSD().to(device)
 
@@ -49,6 +49,8 @@ def test():
 
 
         for bbox in bboxes:
+            draw.text((bbox[1] - bbox[3] / 2, bbox[2] - bbox[4] / 2 - 10), str(round(bbox[0].item(), 2)),
+                      fill=(255, 0, 0))
             draw.rectangle((bbox[1] - bbox[3] / 2, bbox[2] - bbox[4] / 2, bbox[1] + bbox[3] / 2, bbox[2] + bbox[4] / 2),
                            outline=(0, 255, 0))
         print("start show")

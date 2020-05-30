@@ -191,8 +191,6 @@ def bbox2tensor(bboxes, img_size, feature_map):
         p_box[2] = cell_y_bias/cell_size
         p_box[3] = box[2]/img_size
         p_box[4] = box[3]/img_size
-
-
     return label_tensor
 
 

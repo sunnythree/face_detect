@@ -13,8 +13,8 @@ MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--confidence', "-c", type=float, default=0.5, help='confidence')
-    parser.add_argument('--thresh', "-t", type=float, default=0.3, help='iou thresh')
+    parser.add_argument('--confidence', "-c", type=float, default=0, help='confidence')
+    parser.add_argument('--thresh', "-t", type=float, default=0, help='iou thresh')
     return parser.parse_args()
 
 def statistics_result(pred_boxes, label_boxes, iou_thresh=0.5):
@@ -49,10 +49,10 @@ def eval(args):
     state = torch.load(MODEL_SAVE_PATH)
     model.load_state_dict(state['net'])
 
-    correct_num = 0
-    error_num = 0
-    miss_num = 0
-    all_num = 0
+    # correct_num = 0
+    # error_num = 0
+    # miss_num = 0
+    # all_num = 0
     all_cost = 0
 
     if not os.path.exists("data"):
@@ -60,7 +60,7 @@ def eval(args):
     if not os.path.exists("data/eval"):
         os.mkdir("data/eval")
 
-
+    dataset_size = len(data_loader)
     for i_batch, sample_batched in enumerate(data_loader):
         img_tensor = sample_batched[0].to(device)
         label_tensor = sample_batched[1].to(device)
@@ -82,14 +82,14 @@ def eval(args):
         all_cost += (end - start)
 
         bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=args.confidence)
-        bboxes = nms(bboxes, args.confidence, args.thresh)
-        label_boxes = tensor2bbox(label_tensor[0], 416, [52, 26, 13])
-        all_num += len(label_boxes)
-        c, e, m = statistics_result(bboxes, label_boxes, args.thresh)
-        correct_num += c
-        error_num += e
-        miss_num += m
-        print("c,e,m=", correct_num, error_num, miss_num)
+        # bboxes = nms(bboxes, args.confidence, args.thresh)
+        # label_boxes = tensor2bbox(label_tensor[0], 416, [52, 26, 13])
+        # all_num += len(label_boxes)
+        # c, e, m = statistics_result(bboxes, label_boxes, args.thresh)
+        # correct_num += c
+        # error_num += e
+        # miss_num += m
+        # print("c,e,m=", correct_num, error_num, miss_num)
         eval_result.write(str(len(bboxes)) + "\n")
         width = sample_batched[2][1][0].item()
         height = sample_batched[2][1][1].item()
@@ -114,11 +114,12 @@ def eval(args):
 
             eval_result.write(str(bbox[1].item())+' '+str(bbox[2].item())+' '+str(bbox[3].item())+' '+str(bbox[4].item())+' '+str(bbox[0].item())+"\n")
         eval_result.close()
+        print("process "+str(i_batch)+"/"+str(dataset_size))
 
-    print("correct rate: "+str(correct_num / all_num*100)+"%")
-    print("error rate: " + str(error_num / all_num*100)+"%")
-    print("miss rate: " + str(miss_num / all_num*100)+"%")
-    print("mean inferince is: " + str(all_cost / len(data_loader)))
+    # print("correct rate: "+str(correct_num / all_num*100)+"%")
+    # print("error rate: " + str(error_num / all_num*100)+"%")
+    # print("miss rate: " + str(miss_num / all_num*100)+"%")
+    # print("mean inferince is: " + str(all_cost / len(data_loader)))
 
 if __name__=='__main__':
     eval(parse_args())

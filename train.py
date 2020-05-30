@@ -88,10 +88,21 @@ def train(args):
         # bboxes = nms(bboxes, 0.6, 0.5)
         draw = ImageDraw.Draw(pil_img)
         for bbox in bboxes:
+            draw.text((bbox[1] - bbox[3] / 2, bbox[2] - bbox[4] / 2 - 10), str(round(bbox[0].item(), 2)), fill=(255, 0, 0))
             draw.rectangle((bbox[1] - bbox[3] / 2, bbox[2] - bbox[4] / 2, bbox[1] + bbox[3] / 2, bbox[2] + bbox[4] / 2),
+                           outline=(0, 255, 0))
+            draw.rectangle((bbox[1] - bbox[3] / 2 + 1, bbox[2] - bbox[4] / 2 + 1, bbox[1] + bbox[3] / 2 - 1, bbox[2] + bbox[4] / 2 - 1),
                            outline=(0, 255, 0))
         writer.add_image("img: "+str(epoch), to_tensor(pil_img))
         scheduler.step()
+
+        # if epoch % 10 == 0:
+        #     print('Saving..')
+        #     state = {
+        #         'net': model.module.state_dict(),
+        #         'epoch': epoch,
+        #     }
+        #     torch.save(state, "./data/mssd_face_detect"+str(epoch)+".pt")
 
     if not os.path.isdir('data'):
         os.mkdir('data')
