@@ -21,8 +21,8 @@ TEST_SET_FILE = "/wider_face_test_filelist.txt"
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--confidence', "-c", type=float, default=0.6, help='confidence')
-    parser.add_argument('--thresh', "-t", type=float, default=0.3, help='iou thresh')
+    parser.add_argument('--confidence', "-c", type=float, default=0.8, help='confidence')
+    parser.add_argument('--thresh', "-t", type=float, default=0.5, help='iou thresh')
     parser.add_argument('--show', "-s", type=bool, default=False, help='iou thresh')
     return parser.parse_args()
 
@@ -124,6 +124,8 @@ def eval(args):
                 draw.text((bbox[1], bbox[2] - 10), str(round(bbox[0].item(), 2)),
                           fill=(255, 0, 0))
                 draw.rectangle((bbox[1], bbox[2], bbox[3], bbox[4]), outline=(0, 255, 0))
+                draw.rectangle((bbox[1]-1, bbox[2]-1, bbox[3]+1, bbox[4]+1), outline=(0, 255, 0))
+                draw.rectangle((bbox[1]+1, bbox[2]+1, bbox[3]-1, bbox[4]-1), outline=(0, 255, 0))
             plt.imshow(img_origin)
             plt.show()
 

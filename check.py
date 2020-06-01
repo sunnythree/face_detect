@@ -20,7 +20,7 @@ def test():
     model = MSSD().to(device)
 
     # load parameter
-    state = torch.load(MODEL_SAVE_PATH)
+    state = torch.load(MODEL_SAVE_PATH, map_location="cpu")
     model.load_state_dict(state['net'])
 
     to_pil_img = tfs.ToPILImage()
@@ -42,7 +42,7 @@ def test():
         bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.6)
         print("start show2")
         print(bboxes)
-        bboxes = nms(bboxes, 0.6, 0.3)
+        bboxes = nms(bboxes, 0.6, 0.5)
         print(bboxes)
         print("get box num: "+str(len(bboxes)))
         draw = ImageDraw.Draw(pil_img)
@@ -51,6 +51,8 @@ def test():
         for bbox in bboxes:
             draw.text((bbox[1] - bbox[3] / 2, bbox[2] - bbox[4] / 2 - 10), str(round(bbox[0].item(), 2)),
                       fill=(255, 0, 0))
+            draw.rectangle((bbox[1] - bbox[3] / 2-1, bbox[2] - bbox[4] / 2-1, bbox[1] + bbox[3] / 2+1, bbox[2] + bbox[4] / 2+1),
+                           outline=(0, 255, 0))
             draw.rectangle((bbox[1] - bbox[3] / 2, bbox[2] - bbox[4] / 2, bbox[1] + bbox[3] / 2, bbox[2] + bbox[4] / 2),
                            outline=(0, 255, 0))
         print("start show")

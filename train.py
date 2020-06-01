@@ -96,13 +96,13 @@ def train(args):
         writer.add_image("img: "+str(epoch), to_tensor(pil_img))
         scheduler.step()
 
-        # if epoch % 10 == 0:
-        #     print('Saving..')
-        #     state = {
-        #         'net': model.module.state_dict(),
-        #         'epoch': epoch,
-        #     }
-        #     torch.save(state, "./data/mssd_face_detect"+str(epoch)+".pt")
+        if epoch % 10 == 0:
+            print('Saving..')
+            state = {
+                'net': model.module.state_dict(),
+                'epoch': epoch,
+            }
+            torch.save(state, "./data/mssd_face_detect"+str(epoch)+".pt")
 
     if not os.path.isdir('data'):
         os.mkdir('data')
