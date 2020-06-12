@@ -82,7 +82,7 @@ def eval(args):
         all_cost += (end - start)
 
         bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=args.confidence)
-        # bboxes = nms(bboxes, args.confidence, args.thresh)
+        bboxes = nms(bboxes, args.confidence, args.thresh)
         # label_boxes = tensor2bbox(label_tensor[0], 416, [52, 26, 13])
         # all_num += len(label_boxes)
         # c, e, m = statistics_result(bboxes, label_boxes, args.thresh)

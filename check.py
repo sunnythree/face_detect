@@ -10,11 +10,11 @@ import matplotlib.pyplot as plt
 import time
 import math
 import matplotlib.pyplot as plt
-MODEL_SAVE_PATH = "./data/mssd_face_detect.pt"
+MODEL_SAVE_PATH = "./data/mssd_face_detect2540.pt"
 
 def test():
     start_epoch = 0
-    data_loader = DataLoader(dataset=FaceDetectSet(416, True, False), batch_size=1, shuffle=True, num_workers=1)
+    data_loader = DataLoader(dataset=FaceDetectSet(416, False, False), batch_size=1, shuffle=True, num_workers=1)
     # use_cuda = torch.cuda.is_available()
     device = torch.device("cpu")
     model = MSSD().to(device)
@@ -39,7 +39,7 @@ def test():
         # save one pic and output
         pil_img = to_pil_img(sample_batched[0][0])
         print("start show1")
-        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.6)
+        bboxes = tensor2bbox(output[0], 416, [52, 26, 13], thresh=0.9)
         print("start show2")
         print(bboxes)
         bboxes = nms(bboxes, 0.6, 0.5)

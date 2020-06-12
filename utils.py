@@ -35,10 +35,14 @@ def box_union(a, b):
 def box_iou(a, b):
     return box_intersection(a, b) / box_union(a, b)
 
+def confidence_box(a):
+    return a[0]
+
 def nms(bboxes, confidence, iou_thresh):
     nms_boxes = []
+    bboxes = sorted(bboxes, key=confidence_box, reverse=True)
     for box in bboxes:
-        if box[4] < confidence:
+        if box[0] < confidence:
             continue
         is_contain = False
         for i in range(len(nms_boxes)):
@@ -46,9 +50,6 @@ def nms(bboxes, confidence, iou_thresh):
             iou = box_iou(box, nms_box)
             if iou > iou_thresh:
                 is_contain = True
-                if box[4] > nms_box[4]:
-                    nms_boxes[i] = box
-                    break
         if not is_contain:
             nms_boxes.append(box)
     return nms_boxes
