@@ -151,9 +151,9 @@ def pic_resize2square(img, des_size, bboxes, is_random=True):
 def bbox2tensor(bboxes, img_size, feature_map):
     label_tensor = torch.zeros((int((feature_map[0] ** 2) + (feature_map[1] ** 2) + (feature_map[2] ** 2)), 5))
     bbox_index = 0
-    thresh1 = 72
-    thresh2 = 24
-    thresh3 = 8
+    thresh1 = 108
+    thresh2 = 36
+    thresh3 = 12
 
     for box in bboxes:
         w = box[2]
@@ -178,7 +178,7 @@ def bbox2tensor(bboxes, img_size, feature_map):
             cell_size = img_size / feature_map[0]
             feature_size = feature_map[0]
         else:
-            # ignore under 8*8 size
+            # ignore under 12*12 size
             continue
 
         cell_x_index = math.floor(box[0] / cell_size)

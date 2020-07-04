@@ -83,7 +83,7 @@ class MPred(nn.Module):
     def __init__(self):
         super(MPred, self).__init__()
 
-    def forward(self, x1, x2, x3, img_size=416, anchor=[12, 36, 108]):
+    def forward(self, x1, x2, x3, img_size=416, anchor=[16, 48, 144]):
         out1_cxy = torch.sigmoid(x1[:, 0:3, :])
         out1_wh = anchor[0]*torch.exp(x1[:, 3:5, :])/img_size
         out1 = torch.cat([out1_cxy, out1_wh], dim=1)

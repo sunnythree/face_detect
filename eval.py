@@ -111,6 +111,14 @@ def eval(args):
             bbox[2] = bbox[2] - bbox[4]/2
             bbox[3] = bbox[1] + bbox[3]
             bbox[4] = bbox[2] + bbox[4]
+            if bbox[1] < 0:
+                bbox[1] = 0
+            if bbox[2] < 0:
+                bbox[2] = 0
+            if bbox[3] > width:
+                bbox[3] = width
+            if bbox[4] > height:
+                bbox[4] = height
 
             eval_result.write(str(bbox[1].item())+' '+str(bbox[2].item())+' '+str(bbox[3].item())+' '+str(bbox[4].item())+' '+str(bbox[0].item())+"\n")
         eval_result.close()

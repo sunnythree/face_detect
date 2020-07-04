@@ -13,7 +13,10 @@ import argparse
 import numpy as np
 from scipy.io import loadmat
 from bbox import bbox_overlaps
-from IPython import embed
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+
 
 
 def get_gt_boxes(gt_dir):
@@ -274,11 +277,19 @@ def evaluation(pred, gt_path, all, iou_thresh=0.3):
 
             ap = voc_ap(recall, propose)
             aps.append(ap)
+
+
+            plt.plot(recall, propose, label=settings[setting_id])
+            plt.legend()  # 显示图例,plt.legend()
+            plt.savefig(settings[setting_id]+".jpg")
+
+
         print("==================== Results ====================")
         print("Easy   Val AP: {}".format(aps[0]))
         print("Medium Val AP: {}".format(aps[1]))
         print("Hard   Val AP: {}".format(aps[2]))
         print("=================================================")
+
     else:
         aps = []
         # different setting
@@ -347,7 +358,7 @@ if __name__ == '__main__':
     parser.add_argument('--all', help='if test all together', action='store_true')
 
     args = parser.parse_args()
-    evaluation(args.pred, args.gt, args.all, 0.5)
+    evaluation(args.pred, args.gt, args.all, 0.3)
 
 
 
