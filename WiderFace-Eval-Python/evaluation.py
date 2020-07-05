@@ -358,7 +358,7 @@ if __name__ == '__main__':
     parser.add_argument('--all', help='if test all together', action='store_true')
 
     args = parser.parse_args()
-    evaluation(args.pred, args.gt, args.all, 0.3)
+    evaluation(args.pred, args.gt, args.all, 0.5)
 
 
 
