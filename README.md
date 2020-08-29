@@ -28,7 +28,10 @@ details: -c for the confidence of box that contains face.
 ![](https://github.com/sunnythree/face_detect/blob/master/doc/pic6.png)  
 ![](https://github.com/sunnythree/face_detect/blob/master/doc/pic7.png)  
   
-
+# test with camera
+```
+python3.6 camera_show.py
+```
 ### I am still training and optimizing the model, Welcome to do it better together!
 communicate with:  
 QQ group: 704153141  
