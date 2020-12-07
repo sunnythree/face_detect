@@ -28,11 +28,13 @@ class MLoss(nn.Module):
                     bgs.append(x[i, j, 0])
         if len(outs) == 0:
             return None
-        outs_tensor = torch.stack(outs)
-        labels_tensor = torch.stack(labels)
-        bg_tensor = torch.stack(bgs)
-        diff_box = (1.0 + 1.0 / face_num) * self.mse_loss(outs_tensor[:, 1:5], labels_tensor[:, 1:5])
-        diff_c = (1.0 + 1.0 / face_num) * self.bce_loss(outs_tensor[:, 0], labels_tensor[:, 0])
+        box_tensor = torch.stack(outs)[:, 1:5].contiguous()
+        c_tensor = torch.stack(outs)[:, 0].contiguous()
+        labels_box_tensor = torch.stack(labels)[:, 1:5].contiguous()
+        labels_c_tensor = torch.stack(labels)[:, 0].contiguous()
+        bg_tensor = torch.stack(bgs).contiguous()
+        diff_box = (1.0 + 1.0 / face_num) * self.mse_loss(box_tensor, labels_box_tensor)
+        diff_c = (1.0 + 1.0 / face_num) * self.bce_loss(c_tensor, labels_c_tensor)
         diff_bg = alpha * self.bce_loss(bg_tensor, torch.zeros(bg_tensor.shape).cuda())
         diff = diff_box + diff_c + diff_bg
         return diff.sum()

@@ -1,5 +1,5 @@
 from PIL import ImageDraw
-
+from tqdm import tqdm
 from models import *
 from ops import *
 from summary import writer
@@ -21,7 +21,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gama', "-g", type=float, default=0.9, help='train gama')
     parser.add_argument('--step', "-s", type=int, default=20, help='train step')
-    parser.add_argument('--batch', "-b", type=int, default=1, help='train batch')
+    parser.add_argument('--batch', "-b", type=int, default=8, help='train batch')
     parser.add_argument('--epoes', "-e", type=int, default=30, help='train epoes')
     parser.add_argument('--lr', "-l", type=float, default=0.001, help='learn rate')
     parser.add_argument('--pretrained', "-p", type=bool, default=False, help='prepare trained')
@@ -55,19 +55,14 @@ def train(args):
 
     for epoch in range(start_epoch, start_epoch+args.epoes):
         model.train()
-        prefetcher = data_prefetcher(data_loader)
-        img_tensor, label_tensor = prefetcher.next()
-        last_img_tensor = img_tensor
-        last_label_tensor = label_tensor
         optimizer.zero_grad()
-        i_batch = 0
-        while img_tensor is not None:
+        pbar = tqdm(data_loader)
+        for i_batch, (img_tensor, label_tensor) in enumerate(pbar):
             last_img_tensor = img_tensor
             last_label_tensor = label_tensor
-            output = model(img_tensor)
-            loss = loss_func(output, label_tensor)
+            output = model(img_tensor.to(device))
+            loss = loss_func(output, label_tensor.to(device))
             if loss is None:
-                img_tensor, label_tensor = prefetcher.next()
                 continue
             loss.backward()
             if i_batch % args.mini_batch == 0:
@@ -76,10 +71,8 @@ def train(args):
 
             train_loss = loss.item()
             global_step = epoch*len(data_loader)+i_batch
-            progress_bar(i_batch, len(data_loader), 'loss: %f, epeche: %d'%(train_loss, epoch))
+            pbar.set_description('loss: %f, epeche: %d' % (train_loss, epoch))
             writer.add_scalar("loss", train_loss, global_step=global_step)
-            img_tensor, label_tensor = prefetcher.next()
-            i_batch += 1
 
 
         #save one pic and output
